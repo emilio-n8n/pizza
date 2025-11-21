@@ -755,6 +755,14 @@ button {
     margin-top: 1.5rem;
 }
 
+.mb-4 {
+    margin-bottom: 1.5rem;
+}
+
+.text-center {
+    text-align: center;
+}
+
 /* Call Forwarding View */
 .phone-display {
     background: var(--bg-surface-2);
@@ -815,8 +823,14 @@ button {
 }
 
 .operator-card p {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     color: var(--text-muted);
+    margin-bottom: 0.8rem;
+}
+
+.operator-card button {
+    margin-top: 0.5rem;
+    width: 100%;
 }
 
 @media (max-width: 600px) {
