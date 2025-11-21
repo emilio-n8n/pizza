@@ -288,7 +288,7 @@ const app = {
         // Get pizzeria details first
         const { data: pizzeria } = await supabase
             .from('pizzerias')
-            .select('name, user_email')
+            .select('name, user_id, user_email')
             .eq('id', pizzeriaId)
             .single();
 
@@ -309,6 +309,36 @@ const app = {
         if (error) {
             alert('Erreur: ' + error.message);
         } else {
+            // Get user email - if not stored, fetch from auth metadata
+            let userEmail = pizzeria.user_email;
+
+            if (!userEmail) {
+                // Fallback: get email from auth.users via a query
+                const { data: userData } = await supabase
+                    .from('pizzerias')
+                    .select('user_id')
+                    .eq('id', pizzeriaId)
+                    .single();
+
+                // We need to get the email another way since we can't query auth.users directly
+                // Best solution: prompt admin or skip email for old records
+                userEmail = prompt("L'email de cette pizzeria n'est pas enregistré. Veuillez l'entrer :");
+
+                if (userEmail) {
+                    // Update the pizzeria with the email for future use
+                    await supabase
+                        .from('pizzerias')
+                        .update({ user_email: userEmail })
+                        .eq('id', pizzeriaId);
+                }
+            }
+
+            if (!userEmail) {
+                alert('Pizzeria activée, mais aucun email pour envoyer la notification.');
+                app.loadAdminDashboard();
+                return;
+            }
+
             // Send activation email via Edge Function
             try {
                 const { data: { session } } = await supabase.auth.getSession();
@@ -319,7 +349,7 @@ const app = {
                         'Authorization': `Bearer ${session.access_token}`
                     },
                     body: JSON.stringify({
-                        email: pizzeria.user_email,
+                        email: userEmail,
                         pizzeriaName: pizzeria.name,
                         phoneNumber: phoneNumber
                     })
@@ -328,6 +358,8 @@ const app = {
                 if (response.ok) {
                     alert('Pizzeria activée ! Email envoyé au client.');
                 } else {
+                    const errorData = await response.json();
+                    console.error('Email error:', errorData);
                     alert('Pizzeria activée, mais l\'email n\'a pas pu être envoyé.');
                 }
             } catch (emailError) {
