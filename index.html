@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,6 +12,7 @@
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
+
 <body>
 
     <!-- Navigation (Visible on all pages except maybe onboarding) -->
@@ -30,9 +32,11 @@
             <div class="hero">
                 <div class="hero-content">
                     <h1>Ne ratez plus aucune <span class="gradient-text">commande</span>.</h1>
-                    <p>Votre agent IA répond au téléphone, prend les commandes et les note directement dans votre tableau de bord. 24/7.</p>
+                    <p>Votre agent IA répond au téléphone, prend les commandes et les note directement dans votre
+                        tableau de bord. 24/7.</p>
                     <div class="cta-group">
-                        <button onclick="app.navigateTo('signup')" class="btn-primary btn-lg">Créer mon agent <i class="fa-solid fa-arrow-right"></i></button>
+                        <button onclick="app.navigateTo('signup')" class="btn-primary btn-lg">Créer mon agent <i
+                                class="fa-solid fa-arrow-right"></i></button>
                         <button class="btn-secondary btn-lg"><i class="fa-solid fa-play"></i> Écouter une démo</button>
                     </div>
                 </div>
@@ -46,7 +50,8 @@
                             </div>
                         </div>
                         <div class="chat-bubble user">"Je voudrais une Reine et une Coca."</div>
-                        <div class="chat-bubble ai">"C'est noté ! Une pizza Reine et un Coca. Souhaitez-vous un dessert ?"</div>
+                        <div class="chat-bubble ai">"C'est noté ! Une pizza Reine et un Coca. Souhaitez-vous un dessert
+                            ?"</div>
                     </div>
                 </div>
             </div>
@@ -68,14 +73,17 @@
                     </div>
                     <button type="submit" class="btn-primary btn-block">S'inscrire</button>
                 </form>
-                <p class="switch-auth">Déjà un compte ? <a href="#" onclick="app.navigateTo('login')">Se connecter</a></p>
+                <p class="switch-auth">Déjà un compte ? <a href="#" onclick="app.navigateTo('login')">Se connecter</a>
+                </p>
             </div>
         </section>
 
         <!-- 2. Saisie des informations (Onboarding) -->
         <section id="onboarding" class="view">
             <div class="wizard-container">
-                <div class="progress-bar"><div class="fill" style="width: 50%"></div></div>
+                <div class="progress-bar">
+                    <div class="fill" style="width: 50%"></div>
+                </div>
                 <h2>Paramétrez votre Pizzeria</h2>
                 <p>L'IA a besoin de ces infos pour répondre aux clients.</p>
                 <form onsubmit="app.handleOnboarding(event)">
@@ -104,30 +112,64 @@
             </div>
         </section>
 
-        <!-- 3. Confirmation & 5. Email (Simulé) -->
+        <!-- 3. Confirmation (Attente validation) -->
         <section id="confirmation" class="view">
             <div class="success-card">
-                <div class="icon-pulse">
-                    <i class="fa-solid fa-check"></i>
+                <div class="icon-pulse warning">
+                    <i class="fa-solid fa-clock"></i>
                 </div>
-                <h2>Agent en cours de création !</h2>
-                <p>Nos serveurs configurent votre numéro de téléphone dédié.</p>
-                <div class="loader-box">
-                    <div class="loader-step completed"><i class="fa-solid fa-check"></i> Analyse du menu</div>
-                    <div class="loader-step completed"><i class="fa-solid fa-check"></i> Génération de la voix</div>
-                    <div class="loader-step active"><i class="fa-solid fa-circle-notch fa-spin"></i> Activation du numéro</div>
+                <h2>Demande reçue !</h2>
+                <p>Nos experts vont maintenant configurer votre agent vocal manuellement.</p>
+                <div class="info-box">
+                    <p><i class="fa-solid fa-info-circle"></i> Cela prend généralement 24h.</p>
+                    <p>Vous recevrez un email dès que votre numéro est actif.</p>
                 </div>
-                
-                <!-- Simulation du noeud 5 (Email) -->
-                <div id="email-notification" class="hidden">
-                    <div class="email-mockup">
-                        <i class="fa-solid fa-envelope"></i>
-                        <div>
-                            <strong>Email reçu !</strong>
-                            <p>Votre agent est prêt. Cliquez pour accéder au dashboard.</p>
-                        </div>
-                        <button onclick="app.navigateTo('login')" class="btn-small">Ouvrir</button>
+                <button onclick="app.navigateTo('home')" class="btn-secondary mt-4">Retour à l'accueil</button>
+            </div>
+        </section>
+
+        <!-- ADMIN: Login -->
+        <section id="admin-login" class="view">
+            <div class="auth-container">
+                <h2>Administration</h2>
+                <p>Accès réservé à l'équipe PizzaVoice.</p>
+                <form onsubmit="app.handleAdminLogin(event)">
+                    <div class="input-group">
+                        <label>Identifiant</label>
+                        <input type="text" name="adminId" required>
                     </div>
+                    <div class="input-group">
+                        <label>Mot de passe</label>
+                        <input type="password" name="adminPass" required>
+                    </div>
+                    <button type="submit" class="btn-primary btn-block">Connexion Admin</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- ADMIN: Dashboard -->
+        <section id="admin-dashboard" class="view">
+            <div class="admin-layout">
+                <header>
+                    <h2><i class="fa-solid fa-user-shield"></i> Back-office</h2>
+                    <button onclick="app.navigateTo('home')" class="btn-small">Déconnexion</button>
+                </header>
+
+                <div class="admin-stats">
+                    <div class="stat-card">
+                        <h3>En attente</h3>
+                        <div class="value" id="admin-pending-count">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Actifs</h3>
+                        <div class="value" id="admin-active-count">0</div>
+                    </div>
+                </div>
+
+                <h3>Demandes en attente</h3>
+                <div class="pizzeria-list" id="admin-pizzeria-list">
+                    <!-- Populated by JS -->
+                    <div class="empty-state">Aucune demande en attente.</div>
                 </div>
             </div>
         </section>
@@ -162,14 +204,15 @@
                         <li><i class="fa-solid fa-sliders"></i> Config Agent</li>
                         <li><i class="fa-solid fa-phone"></i> Appels</li>
                     </ul>
-                    <button onclick="app.navigateTo('home')" class="logout"><i class="fa-solid fa-right-from-bracket"></i></button>
+                    <button onclick="app.navigateTo('home')" class="logout"><i
+                            class="fa-solid fa-right-from-bracket"></i></button>
                 </aside>
                 <div class="main-content">
                     <header>
                         <h2 id="dash-title">Commandes du jour</h2>
                         <div class="status-badge online"><i class="fa-solid fa-circle"></i> Agent Actif</div>
                     </header>
-                    
+
                     <div class="stats-row">
                         <div class="stat-card">
                             <h3>Commandes</h3>
@@ -200,7 +243,7 @@
                                 <button class="btn-small btn-primary">Valider</button>
                             </div>
                         </div>
-                        
+
                         <div class="order-card">
                             <div class="order-header">
                                 <span class="time">12:45</span>
@@ -222,6 +265,9 @@
 
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="app.js"></script>
 </body>
+
 </html>
+```
