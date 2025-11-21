@@ -1,0 +1,93 @@
+{
+    "nodes": [
+        {
+            "id": "1",
+            "title": "Inscription",
+            "description": "L'utilisateur s'inscrit sur la plateforme.",
+            "position": {
+                "x": 57,
+                "y": 143
+            }
+        },
+        {
+            "id": "2",
+            "title": "Saisie des informations de la pizzeria",
+            "description": "L'utilisateur fournit les informations de sa pizzeria (nom, adresse, etc.).",
+            "position": {
+                "x": 323,
+                "y": -64
+            }
+        },
+        {
+            "id": "3",
+            "title": "Page de confirmation",
+            "description": "L'utilisateur voit un message de remerciement et d'information sur la création de l'agent vocal.",
+            "position": {
+                "x": 375,
+                "y": 123
+            }
+        },
+        {
+            "id": "5",
+            "title": "Envoi d'email de notification",
+            "description": "L'utilisateur reçoit un email l'informant que l'agent vocal est prêt.",
+            "position": {
+                "x": 326,
+                "y": 378
+            }
+        },
+        {
+            "id": "6",
+            "title": "Connexion au tableau de bord",
+            "description": "L'utilisateur se connecte au tableau de bord avec ses identifiants.",
+            "position": {
+                "x": 687,
+                "y": 236
+            }
+        },
+        {
+            "id": "7",
+            "title": "Affichage du tableau de bord",
+            "description": "L'utilisateur visualise les commandes prises par l'agent IA.",
+            "position": {
+                "x": 972,
+                "y": 413
+            }
+        },
+        {
+            "id": "10",
+            "title": "Page d'accueil",
+            "description": "Page d'accueil de l'application.",
+            "position": {
+                "x": -223,
+                "y": 27
+            }
+        }
+    ],
+    "edges": [
+        {
+            "from": "1",
+            "to": "2"
+        },
+        {
+            "from": "2",
+            "to": "3"
+        },
+        {
+            "from": "5",
+            "to": "6"
+        },
+        {
+            "from": "6",
+            "to": "7"
+        },
+        {
+            "from": "10",
+            "to": "1"
+        },
+        {
+            "from": "3",
+            "to": "5"
+        }
+    ]
+}

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PizzaVoice AI - L'Agent Vocal pour votre Pizzeria</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- Navigation (Visible on all pages except maybe onboarding) -->
+    <nav id="navbar">
+        <div class="logo">
+            <i class="fa-solid fa-pizza-slice"></i> PizzaVoice<span>AI</span>
+        </div>
+        <div class="nav-links">
+            <button onclick="app.navigateTo('login')" class="btn-text">Connexion</button>
+            <button onclick="app.navigateTo('signup')" class="btn-primary">Essayer Gratuitement</button>
+        </div>
+    </nav>
+
+    <main id="app">
+        <!-- 10. Page d'accueil -->
+        <section id="home" class="view active">
+            <div class="hero">
+                <div class="hero-content">
+                    <h1>Ne ratez plus aucune <span class="gradient-text">commande</span>.</h1>
+                    <p>Votre agent IA répond au téléphone, prend les commandes et les note directement dans votre tableau de bord. 24/7.</p>
+                    <div class="cta-group">
+                        <button onclick="app.navigateTo('signup')" class="btn-primary btn-lg">Créer mon agent <i class="fa-solid fa-arrow-right"></i></button>
+                        <button class="btn-secondary btn-lg"><i class="fa-solid fa-play"></i> Écouter une démo</button>
+                    </div>
+                </div>
+                <div class="hero-visual">
+                    <div class="phone-mockup">
+                        <div class="incoming-call">
+                            <div class="avatar"><i class="fa-solid fa-robot"></i></div>
+                            <div class="call-info">
+                                <span>PizzaVoice AI</span>
+                                <span class="status">En ligne...</span>
+                            </div>
+                        </div>
+                        <div class="chat-bubble user">"Je voudrais une Reine et une Coca."</div>
+                        <div class="chat-bubble ai">"C'est noté ! Une pizza Reine et un Coca. Souhaitez-vous un dessert ?"</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 1. Inscription -->
+        <section id="signup" class="view">
+            <div class="auth-container">
+                <h2>Commencez maintenant</h2>
+                <p>Créez votre compte pour configurer votre agent.</p>
+                <form onsubmit="app.handleSignup(event)">
+                    <div class="input-group">
+                        <label>Email</label>
+                        <input type="email" required placeholder="contact@mapizzeria.com">
+                    </div>
+                    <div class="input-group">
+                        <label>Mot de passe</label>
+                        <input type="password" required placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="btn-primary btn-block">S'inscrire</button>
+                </form>
+                <p class="switch-auth">Déjà un compte ? <a href="#" onclick="app.navigateTo('login')">Se connecter</a></p>
+            </div>
+        </section>
+
+        <!-- 2. Saisie des informations (Onboarding) -->
+        <section id="onboarding" class="view">
+            <div class="wizard-container">
+                <div class="progress-bar"><div class="fill" style="width: 50%"></div></div>
+                <h2>Paramétrez votre Pizzeria</h2>
+                <p>L'IA a besoin de ces infos pour répondre aux clients.</p>
+                <form onsubmit="app.handleOnboarding(event)">
+                    <div class="input-group">
+                        <label>Nom de la Pizzeria</label>
+                        <input type="text" id="pizzeriaName" required placeholder="Ex: Chez Mario">
+                    </div>
+                    <div class="input-group">
+                        <label>Adresse</label>
+                        <input type="text" required placeholder="12 Rue de la Tomate, Paris">
+                    </div>
+                    <div class="input-group">
+                        <label>Type de Cuisine</label>
+                        <select>
+                            <option>Italienne Classique</option>
+                            <option>Américaine</option>
+                            <option>Napolitaine</option>
+                        </select>
+                    </div>
+                    <div class="file-upload">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <p>Glissez votre menu (PDF/JPG)</p>
+                    </div>
+                    <button type="submit" class="btn-primary btn-block">Créer mon Agent</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- 3. Confirmation & 5. Email (Simulé) -->
+        <section id="confirmation" class="view">
+            <div class="success-card">
+                <div class="icon-pulse">
+                    <i class="fa-solid fa-check"></i>
+                </div>
+                <h2>Agent en cours de création !</h2>
+                <p>Nos serveurs configurent votre numéro de téléphone dédié.</p>
+                <div class="loader-box">
+                    <div class="loader-step completed"><i class="fa-solid fa-check"></i> Analyse du menu</div>
+                    <div class="loader-step completed"><i class="fa-solid fa-check"></i> Génération de la voix</div>
+                    <div class="loader-step active"><i class="fa-solid fa-circle-notch fa-spin"></i> Activation du numéro</div>
+                </div>
+                
+                <!-- Simulation du noeud 5 (Email) -->
+                <div id="email-notification" class="hidden">
+                    <div class="email-mockup">
+                        <i class="fa-solid fa-envelope"></i>
+                        <div>
+                            <strong>Email reçu !</strong>
+                            <p>Votre agent est prêt. Cliquez pour accéder au dashboard.</p>
+                        </div>
+                        <button onclick="app.navigateTo('login')" class="btn-small">Ouvrir</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. Connexion -->
+        <section id="login" class="view">
+            <div class="auth-container">
+                <h2>Bon retour !</h2>
+                <p>Connectez-vous pour voir vos commandes.</p>
+                <form onsubmit="app.handleLogin(event)">
+                    <div class="input-group">
+                        <label>Email</label>
+                        <input type="email" required placeholder="contact@mapizzeria.com">
+                    </div>
+                    <div class="input-group">
+                        <label>Mot de passe</label>
+                        <input type="password" required placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="btn-primary btn-block">Se connecter</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- 7. Tableau de bord -->
+        <section id="dashboard" class="view">
+            <div class="dashboard-layout">
+                <aside class="sidebar">
+                    <div class="logo-small"><i class="fa-solid fa-pizza-slice"></i></div>
+                    <ul class="menu">
+                        <li class="active"><i class="fa-solid fa-list"></i> Commandes</li>
+                        <li><i class="fa-solid fa-chart-line"></i> Stats</li>
+                        <li><i class="fa-solid fa-sliders"></i> Config Agent</li>
+                        <li><i class="fa-solid fa-phone"></i> Appels</li>
+                    </ul>
+                    <button onclick="app.navigateTo('home')" class="logout"><i class="fa-solid fa-right-from-bracket"></i></button>
+                </aside>
+                <div class="main-content">
+                    <header>
+                        <h2 id="dash-title">Commandes du jour</h2>
+                        <div class="status-badge online"><i class="fa-solid fa-circle"></i> Agent Actif</div>
+                    </header>
+                    
+                    <div class="stats-row">
+                        <div class="stat-card">
+                            <h3>Commandes</h3>
+                            <div class="value">12</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Chiffre d'affaires</h3>
+                            <div class="value">184 €</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Appels manqués</h3>
+                            <div class="value danger">0</div>
+                        </div>
+                    </div>
+
+                    <div class="orders-list">
+                        <div class="order-card new">
+                            <div class="order-header">
+                                <span class="time">Il y a 2 min</span>
+                                <span class="tag">À préparer</span>
+                            </div>
+                            <div class="order-items">
+                                <p>1x Pizza 4 Fromages</p>
+                                <p>1x Coca-Cola Zéro</p>
+                            </div>
+                            <div class="order-actions">
+                                <button class="btn-icon"><i class="fa-solid fa-play"></i> Écouter</button>
+                                <button class="btn-small btn-primary">Valider</button>
+                            </div>
+                        </div>
+                        
+                        <div class="order-card">
+                            <div class="order-header">
+                                <span class="time">12:45</span>
+                                <span class="tag done">Prête</span>
+                            </div>
+                            <div class="order-items">
+                                <p>2x Margherita</p>
+                                <p>1x Tiramisu</p>
+                            </div>
+                            <div class="order-actions">
+                                <button class="btn-icon"><i class="fa-solid fa-play"></i> Écouter</button>
+                                <button class="btn-small btn-secondary">Détails</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
