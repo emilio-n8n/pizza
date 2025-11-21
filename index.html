@@ -78,6 +78,29 @@
             </div>
         </section>
 
+        <!-- 1b. Confirmation Email -->
+        <section id="email-confirm" class="view">
+            <div class="success-card">
+                <div class="icon-pulse warning">
+                    <i class="fa-solid fa-envelope"></i>
+                </div>
+                <h2>Vérifiez votre boîte mail</h2>
+                <p>Nous vous avons envoyé un email de confirmation à l'adresse :</p>
+                <p style="font-weight: 700; color: var(--primary);" id="confirm-email-display">email@example.com</p>
+
+                <div class="info-box">
+                    <p><i class="fa-solid fa-info-circle"></i> Cliquez sur le lien dans l'email pour activer votre
+                        compte.</p>
+                    <p style="font-size: 0.85rem; margin-top: 0.5rem;">Pensez à vérifier vos spams si vous ne le voyez
+                        pas.</p>
+                </div>
+
+                <button onclick="app.handleEmailConfirmed()" class="btn-primary btn-block mt-4">
+                    <i class="fa-solid fa-check"></i> J'ai confirmé l'email
+                </button>
+            </div>
+        </section>
+
         <!-- 2. Saisie des informations (Onboarding) -->
         <section id="onboarding" class="view">
             <div class="wizard-container">

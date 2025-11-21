@@ -54,7 +54,7 @@ const app = {
         window.location.hash = viewId;
 
         const navbar = document.getElementById('navbar');
-        if (['dashboard', 'onboarding', 'admin-dashboard', 'admin-login', 'call-forwarding'].includes(viewId)) {
+        if (['dashboard', 'onboarding', 'admin-dashboard', 'admin-login', 'call-forwarding', 'email-confirm'].includes(viewId)) {
             navbar.style.display = 'none';
         } else {
             navbar.style.display = 'flex';
@@ -64,19 +64,18 @@ const app = {
         if (viewId === 'dashboard') await app.loadDashboard();
         if (viewId === 'admin-dashboard') await app.loadAdminDashboard();
         if (viewId === 'call-forwarding') await app.loadCallForwarding();
+        if (viewId === 'email-confirm') {
+            const email = localStorage.getItem('pendingEmail');
+            if (email) {
+                document.getElementById('confirm-email-display').innerText = email;
+            }
+        }
     },
 
     handleSignup: async (e) => {
         e.preventDefault();
-        const form = e.target;
-        const submitBtn = form.querySelector('button[type="submit"]');
-        const originalText = submitBtn.innerText;
-
-        submitBtn.disabled = true;
-        submitBtn.innerText = 'Inscription...';
-
-        const email = form.querySelector('input[type="email"]').value;
-        const password = form.querySelector('input[type="password"]').value;
+        const email = e.target.querySelector('input[type="email"]').value;
+        const password = e.target.querySelector('input[type="password"]').value;
 
         const { data, error } = await supabase.auth.signUp({
             email,
@@ -85,13 +84,22 @@ const app = {
 
         if (error) {
             alert('Erreur: ' + error.message);
-            submitBtn.disabled = false;
-            submitBtn.innerText = originalText;
         } else {
-            alert('Compte créé ! Veuillez vérifier vos emails pour confirmer votre inscription avant de continuer.');
-            app.navigateTo('login');
-            submitBtn.disabled = false;
-            submitBtn.innerText = originalText;
+            // Store email for display
+            localStorage.setItem('pendingEmail', email);
+            app.navigateTo('email-confirm');
+        }
+    },
+
+    handleEmailConfirmed: async () => {
+        // Check if user is actually confirmed
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (session) {
+            app.state.session = session;
+            app.navigateTo('onboarding');
+        } else {
+            alert('Veuillez d\'abord cliquer sur le lien dans votre email avant de continuer.');
         }
     },
 
