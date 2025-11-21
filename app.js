@@ -166,6 +166,7 @@ const app = {
             .insert([
                 {
                     user_id: user.id,
+                    user_email: user.email,
                     name: name,
                     address: 'Adresse par défaut', // Simplified for demo
                     status: 'pending'
@@ -284,6 +285,19 @@ const app = {
 
         if (!confirm(`Confirmer l'activation avec le numéro ${phoneNumber} ?`)) return;
 
+        // Get pizzeria details first
+        const { data: pizzeria } = await supabase
+            .from('pizzerias')
+            .select('name, user_email')
+            .eq('id', pizzeriaId)
+            .single();
+
+        if (!pizzeria) {
+            alert('Erreur: Pizzeria introuvable');
+            return;
+        }
+
+        // Update status
         const { error } = await supabase
             .from('pizzerias')
             .update({
@@ -295,7 +309,32 @@ const app = {
         if (error) {
             alert('Erreur: ' + error.message);
         } else {
-            alert('Pizzeria activée !');
+            // Send activation email via Edge Function
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/send-activation-email`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}`
+                    },
+                    body: JSON.stringify({
+                        email: pizzeria.user_email,
+                        pizzeriaName: pizzeria.name,
+                        phoneNumber: phoneNumber
+                    })
+                });
+
+                if (response.ok) {
+                    alert('Pizzeria activée ! Email envoyé au client.');
+                } else {
+                    alert('Pizzeria activée, mais l\'email n\'a pas pu être envoyé.');
+                }
+            } catch (emailError) {
+                console.error('Email error:', emailError);
+                alert('Pizzeria activée, mais l\'email n\'a pas pu être envoyé.');
+            }
+
             app.loadAdminDashboard();
         }
     },
