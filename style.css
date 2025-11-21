@@ -754,3 +754,73 @@ button {
 .mt-4 {
     margin-top: 1.5rem;
 }
+
+/* Call Forwarding View */
+.phone-display {
+    background: var(--bg-surface-2);
+    padding: 2rem;
+    border-radius: 15px;
+    text-align: center;
+    margin: 2rem 0;
+    border: 1px solid var(--primary);
+}
+
+.phone-display p {
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+}
+
+.phone-display .number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-main);
+    letter-spacing: 2px;
+}
+
+.instructions-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.operator-card {
+    background: var(--bg-surface);
+    padding: 1rem;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    text-align: center;
+    transition: var(--transition);
+}
+
+.operator-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--primary);
+}
+
+.operator-logo {
+    height: 40px;
+    margin-bottom: 1rem;
+    object-fit: contain;
+}
+
+.operator-card .code {
+    background: var(--bg-dark);
+    padding: 0.5rem;
+    border-radius: 5px;
+    font-family: monospace;
+    font-size: 1.1rem;
+    color: var(--secondary);
+    margin-bottom: 0.5rem;
+}
+
+.operator-card p {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+@media (max-width: 600px) {
+    .instructions-list {
+        grid-template-columns: 1fr;
+    }
+}

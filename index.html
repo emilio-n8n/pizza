@@ -112,6 +112,80 @@
             </div>
         </section>
 
+        <!-- 2b. Configuration Transfert d'Appel -->
+        <section id="call-forwarding" class="view">
+            <div class="wizard-container">
+                <div class="text-center mb-4">
+                    <div class="icon-pulse"
+                        style="background: var(--primary); width: 60px; height: 60px; font-size: 1.5rem; margin: 0 auto 1rem;">
+                        <i class="fa-solid fa-phone-volume"></i>
+                    </div>
+                    <h2>Connectons votre téléphone</h2>
+                    <p style="max-width: 400px; margin: 0 auto; color: var(--text-muted);">
+                        Pour que l'IA puisse répondre à vos clients, vous devez activer une simple redirection.
+                        <br><strong>C'est gratuit, réversible à tout moment et sans engagement.</strong>
+                    </p>
+                </div>
+
+                <div class="phone-display">
+                    <p>Voici le numéro secret de votre Assistant :</p>
+                    <div class="number" id="agent-phone-number">...</div>
+                    <p style="font-size: 0.8rem; margin-top: 0.5rem; opacity: 0.7;">(Ce numéro est unique pour votre
+                        pizzeria)</p>
+                </div>
+
+                <h3 style="text-align: center; font-size: 1.1rem; margin-bottom: 1.5rem;">Sélectionnez votre opérateur
+                    pour voir le code à taper :</h3>
+
+                <div class="instructions-list">
+                    <div class="operator-card">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/c/c8/Orange_logo.svg" alt="Orange"
+                            class="operator-logo">
+                        <p>Tapez ceci sur votre clavier d'appel :</p>
+                        <div class="code">**21*<span class="agent-number-display">...</span>#</div>
+                        <button class="btn-small btn-secondary"
+                            onclick="navigator.clipboard.writeText('**21*' + document.getElementById('agent-phone-number').innerText + '#'); alert('Code copié !')"><i
+                                class="fa-regular fa-copy"></i> Copier</button>
+                    </div>
+                    <div class="operator-card">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/c/c9/SFR_logo_2022.svg" alt="SFR"
+                            class="operator-logo">
+                        <p>Tapez ceci sur votre clavier d'appel :</p>
+                        <div class="code">**21*<span class="agent-number-display">...</span>#</div>
+                        <button class="btn-small btn-secondary"
+                            onclick="navigator.clipboard.writeText('**21*' + document.getElementById('agent-phone-number').innerText + '#'); alert('Code copié !')"><i
+                                class="fa-regular fa-copy"></i> Copier</button>
+                    </div>
+                    <div class="operator-card">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Bouygues_Telecom_logo.svg/1200px-Bouygues_Telecom_logo.svg.png"
+                            alt="Bouygues" class="operator-logo">
+                        <p>Tapez ceci sur votre clavier d'appel :</p>
+                        <div class="code">**61*<span class="agent-number-display">...</span>#</div>
+                        <button class="btn-small btn-secondary"
+                            onclick="navigator.clipboard.writeText('**61*' + document.getElementById('agent-phone-number').innerText + '#'); alert('Code copié !')"><i
+                                class="fa-regular fa-copy"></i> Copier</button>
+                    </div>
+                    <div class="operator-card">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Free_logo.svg/1200px-Free_logo.svg.png"
+                            alt="Free" class="operator-logo">
+                        <p>Tapez ceci sur votre clavier d'appel :</p>
+                        <div class="code">**21*<span class="agent-number-display">...</span>#</div>
+                        <button class="btn-small btn-secondary"
+                            onclick="navigator.clipboard.writeText('**21*' + document.getElementById('agent-phone-number').innerText + '#'); alert('Code copié !')"><i
+                                class="fa-regular fa-copy"></i> Copier</button>
+                    </div>
+                </div>
+
+                <div class="info-box" style="text-align: center;">
+                    <p><i class="fa-solid fa-circle-check"></i> Une fois le code tapé et appelé, vous recevrez un
+                        message de confirmation de votre opérateur.</p>
+                </div>
+
+                <button onclick="app.navigateTo('dashboard')" class="btn-primary btn-block mt-4">C'est fait, j'accède à
+                    mon tableau de bord <i class="fa-solid fa-arrow-right"></i></button>
+            </div>
+        </section>
+
         <!-- 3. Confirmation (Attente validation) -->
         <section id="confirmation" class="view">
             <div class="success-card">

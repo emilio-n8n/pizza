@@ -32,7 +32,7 @@ const app = {
 
     navigateTo: async (viewId) => {
         // Auth Guard
-        if (['onboarding', 'confirmation', 'dashboard'].includes(viewId) && !app.state.session) {
+        if (['onboarding', 'confirmation', 'dashboard', 'call-forwarding'].includes(viewId) && !app.state.session) {
             app.navigateTo('login');
             return;
         }
@@ -54,7 +54,7 @@ const app = {
         window.location.hash = viewId;
 
         const navbar = document.getElementById('navbar');
-        if (['dashboard', 'onboarding', 'admin-dashboard', 'admin-login'].includes(viewId)) {
+        if (['dashboard', 'onboarding', 'admin-dashboard', 'admin-login', 'call-forwarding'].includes(viewId)) {
             navbar.style.display = 'none';
         } else {
             navbar.style.display = 'flex';
@@ -63,12 +63,20 @@ const app = {
         // Data Loading
         if (viewId === 'dashboard') await app.loadDashboard();
         if (viewId === 'admin-dashboard') await app.loadAdminDashboard();
+        if (viewId === 'call-forwarding') await app.loadCallForwarding();
     },
 
     handleSignup: async (e) => {
         e.preventDefault();
-        const email = e.target.querySelector('input[type="email"]').value;
-        const password = e.target.querySelector('input[type="password"]').value;
+        const form = e.target;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerText;
+
+        submitBtn.disabled = true;
+        submitBtn.innerText = 'Inscription...';
+
+        const email = form.querySelector('input[type="email"]').value;
+        const password = form.querySelector('input[type="password"]').value;
 
         const { data, error } = await supabase.auth.signUp({
             email,
@@ -77,18 +85,27 @@ const app = {
 
         if (error) {
             alert('Erreur: ' + error.message);
+            submitBtn.disabled = false;
+            submitBtn.innerText = originalText;
         } else {
             alert('Compte créé ! Veuillez vérifier vos emails pour confirmer votre inscription avant de continuer.');
-            // For demo purposes, we might want to auto-login if email confirm is off, but usually it's on.
-            // If the user confirms, they can come back and login.
             app.navigateTo('login');
+            submitBtn.disabled = false;
+            submitBtn.innerText = originalText;
         }
     },
 
     handleLogin: async (e) => {
         e.preventDefault();
-        const email = e.target.querySelector('input[type="email"]').value;
-        const password = e.target.querySelector('input[type="password"]').value;
+        const form = e.target;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerText;
+
+        submitBtn.disabled = true;
+        submitBtn.innerText = 'Connexion...';
+
+        const email = form.querySelector('input[type="email"]').value;
+        const password = form.querySelector('input[type="password"]').value;
 
         const { data, error } = await supabase.auth.signInWithPassword({
             email,
@@ -97,6 +114,8 @@ const app = {
 
         if (error) {
             alert('Erreur: ' + error.message);
+            submitBtn.disabled = false;
+            submitBtn.innerText = originalText;
         } else {
             // Check if they have a pizzeria
             const { data: pizzerias } = await supabase
@@ -105,9 +124,14 @@ const app = {
                 .eq('user_id', data.session.user.id)
                 .single();
 
+            submitBtn.disabled = false;
+            submitBtn.innerText = originalText;
+
             if (pizzerias) {
                 if (pizzerias.status === 'pending') {
                     app.navigateTo('confirmation');
+                } else if (pizzerias.status === 'active') {
+                    app.navigateTo('call-forwarding');
                 } else {
                     app.navigateTo('dashboard');
                 }
@@ -119,6 +143,13 @@ const app = {
 
     handleOnboarding: async (e) => {
         e.preventDefault();
+        const form = e.target;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerText;
+
+        submitBtn.disabled = true;
+        submitBtn.innerText = 'Création...';
+
         const name = document.getElementById('pizzeriaName').value;
         const user = app.state.session.user;
 
@@ -135,15 +166,26 @@ const app = {
 
         if (error) {
             alert('Erreur lors de la création: ' + error.message);
+            submitBtn.disabled = false;
+            submitBtn.innerText = originalText;
         } else {
             app.navigateTo('confirmation');
+            submitBtn.disabled = false;
+            submitBtn.innerText = originalText;
         }
     },
 
     handleAdminLogin: async (e) => {
         e.preventDefault();
-        const email = e.target.querySelector('input[name="adminId"]').value; // Using email input actually
-        const password = e.target.querySelector('input[name="adminPass"]').value;
+        const form = e.target;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerText;
+
+        submitBtn.disabled = true;
+        submitBtn.innerText = 'Connexion...';
+
+        const email = form.querySelector('input[name="adminId"]').value; // Using email input actually
+        const password = form.querySelector('input[name="adminPass"]').value;
 
         // Admin must login as a real user
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -153,6 +195,8 @@ const app = {
 
         if (error) {
             alert('Erreur: ' + error.message);
+            submitBtn.disabled = false;
+            submitBtn.innerText = originalText;
         } else {
             if (email === 'admin@pizzavoice.com') {
                 app.navigateTo('admin-dashboard');
@@ -160,6 +204,8 @@ const app = {
                 alert('Vous n\'êtes pas administrateur.');
                 supabase.auth.signOut();
             }
+            submitBtn.disabled = false;
+            submitBtn.innerText = originalText;
         }
     },
 
@@ -225,11 +271,17 @@ const app = {
     },
 
     activatePizzeria: async (pizzeriaId) => {
-        if (!confirm('Confirmer l\'activation ?')) return;
+        const phoneNumber = prompt("Veuillez entrer le numéro de téléphone généré pour cet agent (ex: 0612345678) :");
+        if (!phoneNumber) return;
+
+        if (!confirm(`Confirmer l'activation avec le numéro ${phoneNumber} ?`)) return;
 
         const { error } = await supabase
             .from('pizzerias')
-            .update({ status: 'active' })
+            .update({
+                status: 'active',
+                phone_number: phoneNumber
+            })
             .eq('id', pizzeriaId);
 
         if (error) {
@@ -237,6 +289,24 @@ const app = {
         } else {
             alert('Pizzeria activée !');
             app.loadAdminDashboard();
+        }
+    },
+
+    loadCallForwarding: async () => {
+        const user = app.state.session?.user;
+        if (!user) return;
+
+        const { data: pizzeria, error } = await supabase
+            .from('pizzerias')
+            .select('phone_number')
+            .eq('user_id', user.id)
+            .single();
+
+        if (pizzeria && pizzeria.phone_number) {
+            document.getElementById('agent-phone-number').innerText = pizzeria.phone_number;
+            document.querySelectorAll('.agent-number-display').forEach(el => {
+                el.innerText = pizzeria.phone_number;
+            });
         }
     }
 };
