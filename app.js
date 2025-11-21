@@ -40,7 +40,7 @@ const app = {
         // Admin Guard
         if (viewId === 'admin-dashboard') {
             const user = app.state.session?.user;
-            if (!user || user.email !== 'admin@pizzavoice.com') {
+            if (!user || user.email !== 'emiliomoreau2012@gmail.com') {
                 alert('Accès réservé aux administrateurs.');
                 app.navigateTo('home');
                 return;
@@ -206,7 +206,7 @@ const app = {
             submitBtn.disabled = false;
             submitBtn.innerText = originalText;
         } else {
-            if (email === 'admin@pizzavoice.com') {
+            if (email === 'emiliomoreau2012@gmail.com') {
                 app.navigateTo('admin-dashboard');
             } else {
                 alert('Vous n\'êtes pas administrateur.');
@@ -239,13 +239,13 @@ const app = {
 
         list.innerHTML = '<p>Chargement...</p>';
 
-        // Fetch all pizzerias (RLS policy allows this for admin@pizzavoice.com)
+        // Fetch all pizzerias (RLS policy allows this for emiliomoreau2012@gmail.com)
         const { data: pizzerias, error } = await supabase
             .from('pizzerias')
             .select('*');
 
         if (error) {
-            list.innerHTML = '<p class="error">Erreur de chargement (Êtes-vous connecté avec admin@pizzavoice.com ?)</p>';
+            list.innerHTML = '<p class="error">Erreur de chargement (Êtes-vous connecté avec emiliomoreau2012@gmail.com ?)</p>';
             return;
         }
 
