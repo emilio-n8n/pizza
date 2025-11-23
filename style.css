@@ -36,6 +36,7 @@ body {
 
 .gradient-text {
     background: linear-gradient(45deg, var(--primary), var(--secondary));
+    background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
@@ -637,16 +638,73 @@ button {
 }
 
 /* Responsive */
+/* Responsive */
 @media (max-width: 768px) {
+
+    /* Navigation */
+    nav {
+        padding: 1rem 5%;
+    }
+
+    .nav-links {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .nav-links button {
+        padding: 0.6rem 1rem;
+        font-size: 0.9rem;
+    }
+
+    .logo {
+        font-size: 1.2rem;
+    }
+
+    /* Hero Section */
     .hero {
         flex-direction: column;
         text-align: center;
+        gap: 3rem;
+        padding-top: 2rem;
     }
 
     .hero h1 {
         font-size: 2.5rem;
     }
 
+    .hero p {
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .cta-group {
+        justify-content: center;
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .cta-group button {
+        width: 100%;
+    }
+
+    .phone-mockup {
+        width: 280px;
+        height: 550px;
+    }
+
+    /* Forms */
+    .auth-container,
+    .wizard-container {
+        margin: 2rem auto;
+        padding: 1.5rem;
+        width: 90%;
+    }
+
+    .wizard-container h2 {
+        font-size: 1.5rem;
+    }
+
+    /* Dashboard */
     .dashboard-layout {
         flex-direction: column;
     }
@@ -656,14 +714,67 @@ button {
         height: auto;
         flex-direction: row;
         overflow-x: auto;
+        padding: 1rem;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        align-items: center;
+    }
+
+    .logo-small {
+        margin-bottom: 0;
+        margin-right: 1rem;
+        display: none;
+        /* Hide small logo on mobile sidebar to save space */
     }
 
     .sidebar .menu {
         display: flex;
+        gap: 0.5rem;
+        margin-bottom: 0;
+    }
+
+    .sidebar .menu li {
+        margin-bottom: 0;
+        white-space: nowrap;
+        padding: 0.5rem 1rem;
+    }
+
+    .logout {
+        display: none;
+        /* Hide logout in mobile sidebar, maybe move to header or bottom */
+    }
+
+    .main-content {
+        padding: 1rem;
     }
 
     .stats-row {
         grid-template-columns: 1fr;
+    }
+
+    /* Admin & Grids */
+    .admin-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .instructions-list {
+        grid-template-columns: 1fr;
+    }
+
+    /* Call Forwarding */
+    .phone-display .number {
+        font-size: 1.8rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero h1 {
+        font-size: 2rem;
+    }
+
+    .nav-links .btn-text {
+        display: none;
+        /* Hide "Connexion" text button on very small screens if needed, or keep it */
     }
 }
 
@@ -809,6 +920,11 @@ button {
 .operator-logo {
     height: 40px;
     margin-bottom: 1rem;
+    background: white;
+    padding: 5px;
+    border-radius: 4px;
+    width: auto;
+    max-width: 100px;
     object-fit: contain;
 }
 
