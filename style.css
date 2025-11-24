@@ -194,73 +194,99 @@ button {
     justify-content: center;
 }
 
+/* Phone Mockup - Call Screen */
 .phone-mockup {
     width: 300px;
     height: 600px;
-    background: var(--bg-surface);
+    background: #202020;
+    /* Dark grey background like iOS call */
     border-radius: 40px;
     border: 8px solid #333;
-    padding: 20px;
+    padding: 40px 20px;
     position: relative;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-    justify-content: center;
+    justify-content: space-between;
+    color: white;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-.incoming-call {
+.call-header {
     text-align: center;
+    margin-top: 2rem;
+}
+
+.caller-name {
+    font-size: 2rem;
+    font-weight: 400;
+    margin-bottom: 0.5rem;
+}
+
+.call-time {
+    font-size: 1.2rem;
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 300;
+}
+
+.call-actions {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem 1rem;
     margin-bottom: 2rem;
 }
 
-.avatar {
-    width: 80px;
-    height: 80px;
-    background: var(--primary);
+.action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.action-btn span {
+    font-size: 0.75rem;
+    color: white;
+}
+
+.icon-circle {
+    width: 65px;
+    height: 65px;
     border-radius: 50%;
-    margin: 0 auto 1rem;
+    background: rgba(255, 255, 255, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    transition: var(--transition);
+}
+
+.action-btn.active .icon-circle {
+    background: white;
+    color: #333;
+}
+
+.hangup-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+
+.hangup-btn {
+    width: 75px;
+    height: 75px;
+    background: #ff3b30;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 2rem;
     color: white;
-    box-shadow: 0 0 20px rgba(255, 94, 58, 0.5);
+    cursor: pointer;
+    transition: transform 0.2s;
 }
 
-.call-info {
-    display: flex;
-    flex-direction: column;
-}
-
-.call-info span:first-child {
-    font-weight: 700;
-    font-size: 1.2rem;
-}
-
-.call-info .status {
-    color: var(--success);
-    font-size: 0.9rem;
-}
-
-.chat-bubble {
-    padding: 1rem;
-    border-radius: 15px;
-    font-size: 0.9rem;
-    max-width: 90%;
-}
-
-.chat-bubble.user {
-    background: var(--bg-surface-2);
-    align-self: flex-start;
-    border-bottom-left-radius: 2px;
-}
-
-.chat-bubble.ai {
-    background: var(--primary);
-    color: white;
-    align-self: flex-end;
-    border-bottom-right-radius: 2px;
+.hangup-btn:hover {
+    transform: scale(1.05);
 }
 
 /* Forms (Auth & Onboarding) */
