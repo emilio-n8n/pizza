@@ -351,10 +351,10 @@
                 <aside class="sidebar">
                     <div class="logo-small"><i class="fa-solid fa-pizza-slice"></i></div>
                     <ul class="menu">
-                        <li class="active"><i class="fa-solid fa-list"></i> Commandes</li>
-                        <li><i class="fa-solid fa-chart-line"></i> Stats</li>
-                        <li><i class="fa-solid fa-sliders"></i> Config Agent</li>
-                        <li><i class="fa-solid fa-phone"></i> Appels</li>
+                        <li class="active" onclick="app.switchDashboardTab('orders')" id="menu-orders"><i
+                                class="fa-solid fa-list"></i> Commandes</li>
+                        <li onclick="app.switchDashboardTab('stats')" id="menu-stats"><i
+                                class="fa-solid fa-chart-line"></i> Stats</li>
                     </ul>
                     <button onclick="app.navigateTo('home')" class="logout"><i
                             class="fa-solid fa-right-from-bracket"></i></button>
@@ -365,27 +365,40 @@
                         <div class="status-badge online"><i class="fa-solid fa-circle"></i> Agent Actif</div>
                     </header>
 
-                    <div class="info-box" id="pizzeria-contact-info" style="margin-bottom: 2rem;">
-                        <!-- Populated by JS -->
+                    <div id="tab-orders" class="dashboard-tab">
+                        <div class="info-box" id="pizzeria-contact-info" style="margin-bottom: 2rem;">
+                            <!-- Populated by JS -->
+                        </div>
+
+                        <div class="stats-row">
+                            <div class="stat-card">
+                                <h3>Commandes</h3>
+                                <div class="value">12</div>
+                            </div>
+                            <div class="stat-card">
+                                <h3>Chiffre d'affaires</h3>
+                                <div class="value">184 €</div>
+                            </div>
+                            <div class="stat-card">
+                                <h3>Appels manqués</h3>
+                                <div class="value danger">0</div>
+                            </div>
+                        </div>
+
+                        <div class="orders-list">
+                            <div class="empty-state">Chargement des commandes...</div>
+                        </div>
                     </div>
 
-                    <div class="stats-row">
-                        <div class="stat-card">
-                            <h3>Commandes</h3>
-                            <div class="value">12</div>
+                    <div id="tab-stats" class="dashboard-tab" style="display: none;">
+                        <div class="stats-container">
+                            <div class="stat-card big-stat">
+                                <div class="icon-circle"><i class="fa-solid fa-phone-volume"></i></div>
+                                <h3>Total Appels Reçus</h3>
+                                <div class="value" id="total-calls-count">0</div>
+                                <p class="subtext">Depuis l'activation de l'agent</p>
+                            </div>
                         </div>
-                        <div class="stat-card">
-                            <h3>Chiffre d'affaires</h3>
-                            <div class="value">184 €</div>
-                        </div>
-                        <div class="stat-card">
-                            <h3>Appels manqués</h3>
-                            <div class="value danger">0</div>
-                        </div>
-                    </div>
-
-                    <div class="orders-list">
-                        <div class="empty-state">Chargement des commandes...</div>
                     </div>
                 </div>
             </div>

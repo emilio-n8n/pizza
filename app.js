@@ -223,6 +223,19 @@ const app = {
         }
     },
 
+    switchDashboardTab: (tabName) => {
+        // Hide all tabs
+        document.querySelectorAll('.dashboard-tab').forEach(el => el.style.display = 'none');
+        // Show target tab
+        const target = document.getElementById(`tab-${tabName}`);
+        if (target) target.style.display = 'block';
+
+        // Update menu active state
+        document.querySelectorAll('.menu li').forEach(el => el.classList.remove('active'));
+        const menu = document.getElementById(`menu-${tabName}`);
+        if (menu) menu.classList.add('active');
+    },
+
     loadDashboard: async () => {
         const user = app.state.session?.user;
         if (!user) return;
@@ -242,6 +255,11 @@ const app = {
                 contactInfo.innerHTML = `
                     <p><strong>Téléphone de contact:</strong> ${pizzeria.contact_phone || 'Non renseigné'}</p>
                 `;
+            }
+
+            // Update stats
+            if (document.getElementById('total-calls-count')) {
+                document.getElementById('total-calls-count').innerText = pizzeria.agent_usage_count || 0;
             }
         }
 
