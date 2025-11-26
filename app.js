@@ -270,6 +270,20 @@ const app = {
             .eq('pizzeria_id', pizzeria.id)
             .order('created_at', { ascending: false });
 
+        if (!ordersError && orders) {
+            // Calculer les stats
+            const totalOrders = orders.length;
+            const totalRevenue = orders.reduce((acc, order) => acc + (Number(order.total_price) || 0), 0);
+
+            // Mettre à jour l'affichage des stats
+            if (document.getElementById('stat-orders-count')) {
+                document.getElementById('stat-orders-count').innerText = totalOrders;
+            }
+            if (document.getElementById('stat-revenue')) {
+                document.getElementById('stat-revenue').innerText = totalRevenue.toFixed(2) + ' €';
+            }
+        }
+
         if (!ordersError) {
             const ordersList = document.querySelector('.orders-list');
             if (ordersList) {
