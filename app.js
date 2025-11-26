@@ -161,7 +161,6 @@ const app = {
         const name = document.getElementById('pizzeriaName').value;
         const address = document.getElementById('pizzeriaAddress').value;
         const contactPhone = document.getElementById('pizzeriaContactPhone').value;
-        const deliveryAddress = document.getElementById('pizzeriaDeliveryAddress').value;
         const cuisine = document.getElementById('pizzeriaCuisine').value;
         const user = app.state.session.user;
 
@@ -174,7 +173,6 @@ const app = {
                     name: name,
                     address: address,
                     contact_phone: contactPhone,
-                    delivery_address: deliveryAddress,
                     cuisine: cuisine,
                     status: 'pending'
                 }
@@ -238,12 +236,11 @@ const app = {
         if (pizzeria) {
             document.getElementById('dash-title').innerText = `Commandes - ${pizzeria.name}`;
 
-            // Afficher les infos de contact et livraison
+            // Afficher les infos de contact
             const contactInfo = document.getElementById('pizzeria-contact-info');
             if (contactInfo) {
                 contactInfo.innerHTML = `
                     <p><strong>Téléphone de contact:</strong> ${pizzeria.contact_phone || 'Non renseigné'}</p>
-                    <p><strong>Adresse de livraison:</strong> ${pizzeria.delivery_address || 'Non renseigné'}</p>
                 `;
             }
         }
@@ -324,7 +321,6 @@ const app = {
                     <p><strong>Email:</strong> ${p.user_email || 'Non renseigné'}</p>
                     <p><strong>Téléphone:</strong> ${p.contact_phone || 'Non renseigné'}</p>
                     <p><strong>Adresse:</strong> ${p.address || 'Non renseigné'}</p>
-                    <p><strong>Livraison:</strong> ${p.delivery_address || 'Non renseigné'}</p>
                     <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">ID: ${p.id}</p>
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 0.5rem;">
