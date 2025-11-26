@@ -252,33 +252,37 @@ const app = {
             .eq('pizzeria_id', pizzeria.id)
             .order('created_at', { ascending: false });
 
-        if (!ordersError && orders) {
+        if (!ordersError) {
             const ordersList = document.querySelector('.orders-list');
-            if (ordersList && orders.length > 0) {
-                ordersList.innerHTML = orders.map(order => {
-                    const timeAgo = new Date(order.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-                    const itemsHtml = Array.isArray(order.items)
-                        ? order.items.map(item => `<p>${item.quantity || 1}x ${item.name}</p>`).join('')
-                        : '<p>Détails non disponibles</p>';
+            if (ordersList) {
+                if (orders && orders.length > 0) {
+                    ordersList.innerHTML = orders.map(order => {
+                        const timeAgo = new Date(order.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                        const itemsHtml = Array.isArray(order.items)
+                            ? order.items.map(item => `<p>${item.quantity || 1}x ${item.name}</p>`).join('')
+                            : '<p>Détails non disponibles</p>';
 
-                    return `
-                        <div class="order-card ${order.status === 'new' ? 'new' : ''}">
-                            <div class="order-header">
-                                <span class="time">${timeAgo}</span>
-                                <span class="tag ${order.status === 'done' ? 'done' : ''}">${order.status === 'new' ? 'À préparer' : 'Prête'}</span>
+                        return `
+                            <div class="order-card ${order.status === 'new' ? 'new' : ''}">
+                                <div class="order-header">
+                                    <span class="time">${timeAgo}</span>
+                                    <span class="tag ${order.status === 'done' ? 'done' : ''}">${order.status === 'new' ? 'À préparer' : 'Prête'}</span>
+                                </div>
+                                <div class="order-items">
+                                    ${itemsHtml}
+                                    ${order.menu ? `<p style="font-style: italic; color: var(--text-muted);">Menu: ${order.menu}</p>` : ''}
+                                    ${order.delivery_address ? `<p style="font-size: 0.85rem; color: var(--text-muted);">📍 ${order.delivery_address}</p>` : ''}
+                                    ${order.customer_phone ? `<p style="font-size: 0.85rem; color: var(--text-muted);">📞 ${order.customer_phone}</p>` : ''}
+                                </div>
+                                <div class="order-actions">
+                                    <button class="btn-small btn-primary">Valider</button>
+                                </div>
                             </div>
-                            <div class="order-items">
-                                ${itemsHtml}
-                                ${order.menu ? `<p style="font-style: italic; color: var(--text-muted);">Menu: ${order.menu}</p>` : ''}
-                                ${order.delivery_address ? `<p style="font-size: 0.85rem; color: var(--text-muted);">📍 ${order.delivery_address}</p>` : ''}
-                                ${order.customer_phone ? `<p style="font-size: 0.85rem; color: var(--text-muted);">📞 ${order.customer_phone}</p>` : ''}
-                            </div>
-                            <div class="order-actions">
-                                <button class="btn-small btn-primary">Valider</button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
+                        `;
+                    }).join('');
+                } else {
+                    ordersList.innerHTML = '<div class="empty-state">Aucune commande pour le moment.</div>';
+                }
             }
         }
     },

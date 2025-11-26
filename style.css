@@ -953,6 +953,15 @@ button {
     gap: 1rem;
 }
 
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-muted);
+    background: var(--bg-surface);
+    border-radius: 10px;
+    border: 1px dashed var(--border);
+}
+
 .pizzeria-card {
     background: var(--bg-surface);
     padding: 1.5rem;
