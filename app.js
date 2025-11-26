@@ -159,6 +159,10 @@ const app = {
         submitBtn.innerText = 'Création...';
 
         const name = document.getElementById('pizzeriaName').value;
+        const address = document.getElementById('pizzeriaAddress').value;
+        const contactPhone = document.getElementById('pizzeriaContactPhone').value;
+        const deliveryAddress = document.getElementById('pizzeriaDeliveryAddress').value;
+        const cuisine = document.getElementById('pizzeriaCuisine').value;
         const user = app.state.session.user;
 
         const { error } = await supabase
@@ -168,7 +172,10 @@ const app = {
                     user_id: user.id,
                     user_email: user.email,
                     name: name,
-                    address: 'Adresse par défaut', // Simplified for demo
+                    address: address,
+                    contact_phone: contactPhone,
+                    delivery_address: deliveryAddress,
+                    cuisine: cuisine,
                     status: 'pending'
                 }
             ]);
@@ -230,6 +237,52 @@ const app = {
 
         if (pizzeria) {
             document.getElementById('dash-title').innerText = `Commandes - ${pizzeria.name}`;
+
+            // Afficher les infos de contact et livraison
+            const contactInfo = document.getElementById('pizzeria-contact-info');
+            if (contactInfo) {
+                contactInfo.innerHTML = `
+                    <p><strong>Téléphone de contact:</strong> ${pizzeria.contact_phone || 'Non renseigné'}</p>
+                    <p><strong>Adresse de livraison:</strong> ${pizzeria.delivery_address || 'Non renseigné'}</p>
+                `;
+            }
+        }
+
+        // Charger les commandes réelles
+        const { data: orders, error: ordersError } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('pizzeria_id', pizzeria.id)
+            .order('created_at', { ascending: false });
+
+        if (!ordersError && orders) {
+            const ordersList = document.querySelector('.orders-list');
+            if (ordersList && orders.length > 0) {
+                ordersList.innerHTML = orders.map(order => {
+                    const timeAgo = new Date(order.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                    const itemsHtml = Array.isArray(order.items)
+                        ? order.items.map(item => `<p>${item.quantity || 1}x ${item.name}</p>`).join('')
+                        : '<p>Détails non disponibles</p>';
+
+                    return `
+                        <div class="order-card ${order.status === 'new' ? 'new' : ''}">
+                            <div class="order-header">
+                                <span class="time">${timeAgo}</span>
+                                <span class="tag ${order.status === 'done' ? 'done' : ''}">${order.status === 'new' ? 'À préparer' : 'Prête'}</span>
+                            </div>
+                            <div class="order-items">
+                                ${itemsHtml}
+                                ${order.menu ? `<p style="font-style: italic; color: var(--text-muted);">Menu: ${order.menu}</p>` : ''}
+                                ${order.delivery_address ? `<p style="font-size: 0.85rem; color: var(--text-muted);">📍 ${order.delivery_address}</p>` : ''}
+                                ${order.customer_phone ? `<p style="font-size: 0.85rem; color: var(--text-muted);">📞 ${order.customer_phone}</p>` : ''}
+                            </div>
+                            <div class="order-actions">
+                                <button class="btn-small btn-primary">Valider</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
         }
     },
 
@@ -268,12 +321,20 @@ const app = {
             card.innerHTML = `
                 <div class="info">
                     <h4>${p.name}</h4>
-                    <p>ID: ${p.id}</p>
-                    <p>Cuisine: ${p.cuisine || 'Non spécifié'}</p>
+                    <p><strong>Email:</strong> ${p.user_email || 'Non renseigné'}</p>
+                    <p><strong>Téléphone:</strong> ${p.contact_phone || 'Non renseigné'}</p>
+                    <p><strong>Adresse:</strong> ${p.address || 'Non renseigné'}</p>
+                    <p><strong>Livraison:</strong> ${p.delivery_address || 'Non renseigné'}</p>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">ID: ${p.id}</p>
                 </div>
-                <button onclick="app.activatePizzeria('${p.id}')" class="btn-small btn-primary">
-                    <i class="fa-solid fa-check"></i> Configurer & Activer
-                </button>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <button onclick="app.copyWebhookJSON('${p.id}')" class="btn-small btn-secondary">
+                        <i class="fa-solid fa-copy"></i> Copier JSON Webhook
+                    </button>
+                    <button onclick="app.activatePizzeria('${p.id}')" class="btn-small btn-primary">
+                        <i class="fa-solid fa-check"></i> Configurer & Activer
+                    </button>
+                </div>
             `;
             list.appendChild(card);
         });
@@ -369,6 +430,31 @@ const app = {
 
             app.loadAdminDashboard();
         }
+    },
+
+    copyWebhookJSON: (pizzeriaId) => {
+        const webhookConfig = {
+            pizzeria_id: pizzeriaId,
+            webhook_url: `${SUPABASE_URL}/functions/v1/create-order`,
+            example_payload: {
+                pizzeria_id: pizzeriaId,
+                customer_phone: "0612345678",
+                items: [
+                    { name: "Pizza Margherita", quantity: 1 },
+                    { name: "Coca-Cola", quantity: 1 }
+                ],
+                menu: "Menu Midi",
+                delivery_address: "123 Rue Example, Paris",
+                total: 15.50
+            }
+        };
+
+        navigator.clipboard.writeText(JSON.stringify(webhookConfig, null, 2))
+            .then(() => alert('✅ Configuration webhook copiée dans le presse-papier !'))
+            .catch(err => {
+                console.error('Erreur copie:', err);
+                alert('Erreur lors de la copie. Vérifiez la console.');
+            });
     },
 
     loadCallForwarding: async () => {

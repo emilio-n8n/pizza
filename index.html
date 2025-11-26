@@ -141,11 +141,20 @@
                     </div>
                     <div class="input-group">
                         <label>Adresse</label>
-                        <input type="text" required placeholder="12 Rue de la Tomate, Paris">
+                        <input type="text" id="pizzeriaAddress" required placeholder="12 Rue de la Tomate, Paris">
+                    </div>
+                    <div class="input-group">
+                        <label>Téléphone de contact</label>
+                        <input type="tel" id="pizzeriaContactPhone" required placeholder="06 12 34 56 78">
+                    </div>
+                    <div class="input-group">
+                        <label>Adresse de livraison par défaut</label>
+                        <input type="text" id="pizzeriaDeliveryAddress" required
+                            placeholder="12 Rue de la Tomate, Paris">
                     </div>
                     <div class="input-group">
                         <label>Type de Cuisine</label>
-                        <select>
+                        <select id="pizzeriaCuisine">
                             <option>Italienne Classique</option>
                             <option>Américaine</option>
                             <option>Napolitaine</option>
@@ -360,6 +369,10 @@
                         <h2 id="dash-title">Commandes du jour</h2>
                         <div class="status-badge online"><i class="fa-solid fa-circle"></i> Agent Actif</div>
                     </header>
+
+                    <div class="info-box" id="pizzeria-contact-info" style="margin-bottom: 2rem;">
+                        <!-- Populated by JS -->
+                    </div>
 
                     <div class="stats-row">
                         <div class="stat-card">
