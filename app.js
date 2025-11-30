@@ -176,6 +176,7 @@ const app = {
             app.menuPhotoBase64 = base64;
 
             // Start analysis
+            statusDiv.innerHTML = '<p style="margin: 0;"><i class="fa-solid fa-spinner fa-spin"></i> Analyse IA en cours...</p>';
             statusDiv.style.display = 'block';
             extractedDiv.style.display = 'none';
 
@@ -524,6 +525,7 @@ const app = {
 
         // Populate modal
         document.getElementById('modal-pizzeria-name').innerText = pizzeria.name;
+        document.getElementById('modal-id').innerText = pizzeria.id;
         document.getElementById('modal-email').innerText = pizzeria.user_email || 'Non renseigné';
         document.getElementById('modal-phone').innerText = pizzeria.contact_phone || 'Non renseigné';
         document.getElementById('modal-address').innerText = pizzeria.address || 'Non renseigné';
@@ -532,7 +534,7 @@ const app = {
         // Show menu if available
         const menuSection = document.getElementById('modal-menu-section');
         const menuItems = document.getElementById('modal-menu-items');
-        if (pizzeria.menu_json && pizzeria.menu_json.length > 0) {
+        if (pizzeria.menu_json && Array.isArray(pizzeria.menu_json) && pizzeria.menu_json.length > 0) {
             menuSection.style.display = 'block';
             menuItems.innerHTML = pizzeria.menu_json.map(item =>
                 `<p><strong>${item.name}</strong>: ${item.price}€</p>`
