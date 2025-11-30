@@ -163,18 +163,48 @@ const app = {
 
         // Show preview
         preview.style.display = 'block';
-        img.style.display = 'block'; // Reset display in case it was hidden
+        img.style.display = 'block';
+
+        // Create a temporary image for compression
+        const tempImg = new Image();
         const reader = new FileReader();
+
         reader.onload = (e) => {
             img.src = e.target.result;
+            tempImg.src = e.target.result;
         };
         reader.readAsDataURL(file);
 
-        // Convert to base64 and analyze immediately
-        const base64Reader = new FileReader();
-        base64Reader.onload = async (e) => {
-            const base64 = e.target.result.split(',')[1];
-            app.menuPhotoBase64 = base64;
+        tempImg.onload = async () => {
+            // Compress image
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Max dimensions
+            const MAX_WIDTH = 1024;
+            const MAX_HEIGHT = 1024;
+            let width = tempImg.width;
+            let height = tempImg.height;
+
+            if (width > height) {
+                if (width > MAX_WIDTH) {
+                    height *= MAX_WIDTH / width;
+                    width = MAX_WIDTH;
+                }
+            } else {
+                if (height > MAX_HEIGHT) {
+                    width *= MAX_HEIGHT / height;
+                    height = MAX_HEIGHT;
+                }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(tempImg, 0, 0, width, height);
+
+            // Get compressed base64 (JPEG quality 0.7)
+            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
+            app.menuPhotoBase64 = compressedBase64;
 
             // Start analysis
             statusDiv.innerHTML = '<p style="margin: 0;"><i class="fa-solid fa-spinner fa-spin"></i> Analyse IA en cours...</p>';
@@ -190,7 +220,7 @@ const app = {
                         'Authorization': `Bearer ${session.access_token}`
                     },
                     body: JSON.stringify({
-                        image_base64: base64
+                        image_base64: compressedBase64
                         // pizzeria_id is optional now, not sending it for preview
                     })
                 });
@@ -212,10 +242,9 @@ const app = {
                 }
             } catch (err) {
                 console.error('Menu analysis error:', err);
-                statusDiv.innerHTML = '<p style="color: var(--error);">Erreur lors de l\'analyse. Veuillez réessayer.</p>';
+                statusDiv.innerHTML = '<p style="color: var(--error);">Erreur lors de l\'analyse. Veuillez réessayer avec une image plus petite.</p>';
             }
         };
-        base64Reader.readAsDataURL(file);
     },
 
     renderMenuTable: () => {
