@@ -231,8 +231,27 @@
                                     cours...</p>
                             </div>
                             <div id="menuExtracted" style="display: none;">
-                                <h4>Menu extrait :</h4>
-                                <div id="menuItems"></div>
+                                <h4>Menu extrait (vous pouvez modifier) :</h4>
+                                <table id="menuTable" style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+                                    <thead>
+                                        <tr style="background: var(--bg-secondary);">
+                                            <th
+                                                style="padding: 0.75rem; text-align: left; border: 1px solid var(--border);">
+                                                Nom</th>
+                                            <th
+                                                style="padding: 0.75rem; text-align: left; border: 1px solid var(--border); width: 120px;">
+                                                Prix (€)</th>
+                                            <th
+                                                style="padding: 0.75rem; text-align: center; border: 1px solid var(--border); width: 80px;">
+                                                Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="menuTableBody"></tbody>
+                                </table>
+                                <button type="button" onclick="app.addMenuRow()" class="btn-secondary"
+                                    style="margin-top: 1rem;">
+                                    <i class="fa-solid fa-plus"></i> Ajouter une ligne
+                                </button>
                             </div>
                         </div>
                     </div>

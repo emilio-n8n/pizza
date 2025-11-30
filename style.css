@@ -936,6 +936,8 @@ button {
     max-width: 800px;
     margin: 0 auto;
     padding: 2rem;
+    background: #1a1a1a;
+    min-height: 100vh;
 }
 
 .admin-layout header {
@@ -1286,6 +1288,7 @@ button {
 .menu li {
     cursor: pointer;
 }
+
 /* Modal Styles */
 .modal {
     position: fixed;
@@ -1302,7 +1305,8 @@ button {
 }
 
 .modal-content {
-    background: white;
+    background: #0f0f0f;
+    border: 1px solid #2a2a2a;
     border-radius: 12px;
     padding: 2rem;
     max-width: 600px;
@@ -1330,17 +1334,18 @@ button {
 .modal-section {
     margin: 1.5rem 0;
     padding: 1rem;
-    background: var(--bg-secondary);
+    background: #1a1a1a;
     border-radius: 8px;
 }
 
 .modal-section h3 {
     margin-top: 0;
-    color: var(--primary);
+    color: #ff4444;
 }
 
 .modal-section p {
     margin: 0.5rem 0;
+    color: #ccc;
 }
 
 .modal-actions {
@@ -1354,8 +1359,13 @@ button {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 @keyframes slideUp {
@@ -1363,6 +1373,7 @@ button {
         transform: translateY(30px);
         opacity: 0;
     }
+
     to {
         transform: translateY(0);
         opacity: 1;
@@ -1500,8 +1511,15 @@ button {
 }
 
 @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
 }
 
 .stats-row-dark {
@@ -1631,4 +1649,4 @@ button {
     text-align: center;
     padding: 3rem;
     color: #666;
-}
+}.modal-content h2 { color: white; }

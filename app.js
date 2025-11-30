@@ -150,6 +150,7 @@ const app = {
     },
 
     menuPhotoBase64: null,
+    extractedMenu: [],
 
     previewMenuPhoto: async (event) => {
         const file = event.target.files[0];
@@ -168,13 +169,84 @@ const app = {
         };
         reader.readAsDataURL(file);
 
-        // Convert to base64 for API
+        // Convert to base64 and analyze immediately
         const base64Reader = new FileReader();
         base64Reader.onload = async (e) => {
             const base64 = e.target.result.split(',')[1];
             app.menuPhotoBase64 = base64;
+
+            // Start analysis
+            statusDiv.style.display = 'block';
+            extractedDiv.style.display = 'none';
+
+            try {
+                const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=AIzaSyDNFnTkCLWFDIVVlnmTVxWjvPCZPkOXPqM', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [
+                                { text: "Analyse cette photo de menu de pizzeria. Extrais UNIQUEMENT les noms de pizzas et leurs prix. Réponds avec un tableau JSON au format: [{\"name\": \"Pizza Margherita\", \"price\": 12.50}]. Ne retourne rien d'autre que le JSON valide, sans markdown ni texte supplémentaire." },
+                                { inline_data: { mime_type: "image/jpeg", data: base64 } }
+                            ]
+                        }]
+                    })
+                });
+
+                const result = await response.json();
+                const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (text) {
+                    const cleanedText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+                    app.extractedMenu = JSON.parse(cleanedText);
+
+                    statusDiv.style.display = 'none';
+                    extractedDiv.style.display = 'block';
+                    app.renderMenuTable();
+                } else {
+                    throw new Error('Pas de réponse de Gemini');
+                }
+            } catch (err) {
+                console.error('Menu analysis error:', err);
+                statusDiv.innerHTML = '<p style="color: var(--error);">Erreur lors de l\'analyse. Veuillez réessayer.</p>';
+            }
         };
         base64Reader.readAsDataURL(file);
+    },
+
+    renderMenuTable: () => {
+        const tbody = document.getElementById('menuTableBody');
+        tbody.innerHTML = app.extractedMenu.map((item, index) => `
+            <tr>
+                <td style="padding: 0.75rem; border: 1px solid var(--border);">
+                    <input type="text" value="${item.name}" onchange="app.updateMenuItem(${index}, 'name', this.value)" 
+                           style="width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px;">
+                </td>
+                <td style="padding: 0.75rem; border: 1px solid var(--border);">
+                    <input type="number" step="0.01" value="${item.price}" onchange="app.updateMenuItem(${index}, 'price', parseFloat(this.value))" 
+                           style="width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px;">
+                </td>
+                <td style="padding: 0.75rem; border: 1px solid var(--border); text-align: center;">
+                    <button type="button" onclick="app.removeMenuItem(${index})" class="btn-small" style="background: var(--error); color: white;">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    },
+
+    updateMenuItem: (index, field, value) => {
+        app.extractedMenu[index][field] = value;
+    },
+
+    removeMenuItem: (index) => {
+        app.extractedMenu.splice(index, 1);
+        app.renderMenuTable();
+    },
+
+    addMenuRow: () => {
+        app.extractedMenu.push({ name: '', price: 0 });
+        app.renderMenuTable();
     },
 
     handleOnboarding: async (e) => {
@@ -215,39 +287,15 @@ const app = {
             return;
         }
 
-        // Analyze menu if photo provided
-        if (app.menuPhotoBase64) {
-            const statusDiv = document.getElementById('menuAnalysisStatus');
-            const extractedDiv = document.getElementById('menuExtracted');
-            statusDiv.style.display = 'block';
+        // Save menu if extracted
+        if (app.extractedMenu.length > 0) {
+            const { error: menuError } = await supabase
+                .from('pizzerias')
+                .update({ menu_json: app.extractedMenu })
+                .eq('id', pizzeriaData.id);
 
-            try {
-                const { data: { session } } = await supabase.auth.getSession();
-                const response = await fetch(`${SUPABASE_URL}/functions/v1/analyze-menu`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session.access_token}`
-                    },
-                    body: JSON.stringify({
-                        image_base64: app.menuPhotoBase64,
-                        pizzeria_id: pizzeriaData.id
-                    })
-                });
-
-                const result = await response.json();
-                statusDiv.style.display = 'none';
-
-                if (result.success) {
-                    extractedDiv.style.display = 'block';
-                    const menuItems = document.getElementById('menuItems');
-                    menuItems.innerHTML = result.menu.map(item =>
-                        `<p><strong>${item.name}</strong>: ${item.price}€</p>`
-                    ).join('');
-                }
-            } catch (err) {
-                console.error('Menu analysis error:', err);
-                statusDiv.innerHTML = '<p style="color: var(--error);">Erreur lors de l\'analyse du menu</p>';
+            if (menuError) {
+                console.error('Menu save error:', menuError);
             }
         }
 
