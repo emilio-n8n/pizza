@@ -149,12 +149,14 @@ const app = {
         }
     },
 
-    menuPhotoBase64: null,
+    menuPhotoFile: null,
     extractedMenu: [],
 
-    previewMenuPhoto: async (event) => {
+    previewMenuPhoto: (event) => {
         const file = event.target.files[0];
         if (!file) return;
+
+        app.menuPhotoFile = file;
 
         const preview = document.getElementById('menuPhotoPreview');
         const img = document.getElementById('menuPhotoImg');
@@ -164,123 +166,17 @@ const app = {
         // Show preview
         preview.style.display = 'block';
         img.style.display = 'block';
+        statusDiv.style.display = 'none';
+        extractedDiv.style.display = 'none';
 
-        // Create a temporary image for compression
-        const tempImg = new Image();
         const reader = new FileReader();
-
         reader.onload = (e) => {
             img.src = e.target.result;
-            tempImg.src = e.target.result;
         };
         reader.readAsDataURL(file);
-
-        tempImg.onload = async () => {
-            // Compress image
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-
-            // Max dimensions
-            const MAX_WIDTH = 1024;
-            const MAX_HEIGHT = 1024;
-            let width = tempImg.width;
-            let height = tempImg.height;
-
-            if (width > height) {
-                if (width > MAX_WIDTH) {
-                    height *= MAX_WIDTH / width;
-                    width = MAX_WIDTH;
-                }
-            } else {
-                if (height > MAX_HEIGHT) {
-                    width *= MAX_HEIGHT / height;
-                    height = MAX_HEIGHT;
-                }
-            }
-
-            canvas.width = width;
-            canvas.height = height;
-            ctx.drawImage(tempImg, 0, 0, width, height);
-
-            // Get compressed base64 (JPEG quality 0.7)
-            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
-            app.menuPhotoBase64 = compressedBase64;
-
-            // Start analysis
-            statusDiv.innerHTML = '<p style="margin: 0;"><i class="fa-solid fa-spinner fa-spin"></i> Analyse IA en cours...</p>';
-            statusDiv.style.display = 'block';
-            extractedDiv.style.display = 'none';
-
-            try {
-                const { data: { session } } = await supabase.auth.getSession();
-                const response = await fetch(`${SUPABASE_URL}/functions/v1/analyze-menu`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session.access_token}`
-                    },
-                    body: JSON.stringify({
-                        image_base64: compressedBase64
-                        // pizzeria_id is optional now, not sending it for preview
-                    })
-                });
-
-                const result = await response.json();
-
-                if (result.success && result.menu) {
-                    app.extractedMenu = result.menu;
-
-                    statusDiv.style.display = 'none';
-                    extractedDiv.style.display = 'block';
-
-                    // Hide the image preview to show only the grid
-                    img.style.display = 'none';
-
-                    app.renderMenuTable();
-                } else {
-                    throw new Error(result.error || 'Erreur inconnue');
-                }
-            } catch (err) {
-                console.error('Menu analysis error:', err);
-                statusDiv.innerHTML = '<p style="color: var(--error);">Erreur lors de l\'analyse. Veuillez réessayer avec une image plus petite.</p>';
-            }
-        };
     },
 
-    renderMenuTable: () => {
-        const tbody = document.getElementById('menuTableBody');
-        tbody.innerHTML = app.extractedMenu.map((item, index) => `
-            <tr>
-                <td style="padding: 0.75rem; border: 1px solid var(--border);">
-                    <input type="text" value="${item.name}" onchange="app.updateMenuItem(${index}, 'name', this.value)" 
-                           style="width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px;">
-                </td>
-                <td style="padding: 0.75rem; border: 1px solid var(--border);">
-                    <input type="number" step="0.01" value="${item.price}" onchange="app.updateMenuItem(${index}, 'price', parseFloat(this.value))" 
-                           style="width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px;">
-                </td>
-                <td style="padding: 0.75rem; border: 1px solid var(--border); text-align: center;">
-                    <button type="button" onclick="app.removeMenuItem(${index})" class="btn-small" style="background: var(--error); color: white;">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
-                </td>
-            </tr>
-        `).join('');
-    },
 
-    updateMenuItem: (index, field, value) => {
-        app.extractedMenu[index][field] = value;
-    },
-
-    removeMenuItem: (index) => {
-        app.extractedMenu.splice(index, 1);
-        app.renderMenuTable();
-    },
-
-    addMenuRow: () => {
-        app.extractedMenu.push({ name: '', price: 0 });
-        app.renderMenuTable();
-    },
 
     handleOnboarding: async (e) => {
         e.preventDefault();
@@ -320,15 +216,24 @@ const app = {
             return;
         }
 
-        // Save menu if extracted
-        if (app.extractedMenu.length > 0) {
-            const { error: menuError } = await supabase
-                .from('pizzerias')
-                .update({ menu_json: app.extractedMenu })
-                .eq('id', pizzeriaData.id);
+        // Upload menu photo if provided
+        if (app.menuPhotoFile) {
+            const fileName = `${pizzeriaData.id}/${Date.now()}_menu.jpg`;
+            const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('menus')
+                .upload(fileName, app.menuPhotoFile);
 
-            if (menuError) {
-                console.error('Menu save error:', menuError);
+            if (uploadError) {
+                console.error('Menu upload error:', uploadError);
+            } else {
+                const { data: { publicUrl } } = supabase.storage
+                    .from('menus')
+                    .getPublicUrl(fileName);
+
+                await supabase
+                    .from('pizzerias')
+                    .update({ menu_photo_url: publicUrl })
+                    .eq('id', pizzeriaData.id);
             }
         }
 
@@ -563,16 +468,15 @@ const app = {
         document.getElementById('modal-address').innerText = pizzeria.address || 'Non renseigné';
         document.getElementById('modal-created').innerText = new Date(pizzeria.created_at).toLocaleDateString('fr-FR');
 
-        // Show menu if available
-        const menuSection = document.getElementById('modal-menu-section');
-        const menuItems = document.getElementById('modal-menu-items');
-        if (pizzeria.menu_json && Array.isArray(pizzeria.menu_json) && pizzeria.menu_json.length > 0) {
-            menuSection.style.display = 'block';
-            menuItems.innerHTML = pizzeria.menu_json.map(item =>
-                `<p><strong>${item.name}</strong>: ${item.price}€</p>`
-            ).join('');
+        // Show menu photo if available
+        const menuPhotoSection = document.getElementById('modal-menu-photo-section');
+        const menuPhotoImg = document.getElementById('modal-menu-photo');
+
+        if (pizzeria.menu_photo_url) {
+            menuPhotoSection.style.display = 'block';
+            menuPhotoImg.src = pizzeria.menu_photo_url;
         } else {
-            menuSection.style.display = 'none';
+            menuPhotoSection.style.display = 'none';
         }
 
         // Show modal

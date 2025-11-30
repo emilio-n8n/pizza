@@ -225,34 +225,6 @@
                         <input type="file" id="menuPhoto" accept="image/*" onchange="app.previewMenuPhoto(event)">
                         <div id="menuPhotoPreview" style="display: none; margin-top: 1rem;">
                             <img id="menuPhotoImg" style="max-width: 100%; border-radius: 8px; margin-bottom: 1rem;">
-                            <div id="menuAnalysisStatus"
-                                style="padding: 1rem; background: var(--bg-secondary); border-radius: 8px; display: none;">
-                                <p style="margin: 0;"><i class="fa-solid fa-spinner fa-spin"></i> Analyse du menu en
-                                    cours...</p>
-                            </div>
-                            <div id="menuExtracted" style="display: none;">
-                                <h4>Menu extrait (vous pouvez modifier) :</h4>
-                                <table id="menuTable" style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
-                                    <thead>
-                                        <tr style="background: var(--bg-secondary);">
-                                            <th
-                                                style="padding: 0.75rem; text-align: left; border: 1px solid var(--border);">
-                                                Nom</th>
-                                            <th
-                                                style="padding: 0.75rem; text-align: left; border: 1px solid var(--border); width: 120px;">
-                                                Prix (€)</th>
-                                            <th
-                                                style="padding: 0.75rem; text-align: center; border: 1px solid var(--border); width: 80px;">
-                                                Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="menuTableBody"></tbody>
-                                </table>
-                                <button type="button" onclick="app.addMenuRow()" class="btn-secondary"
-                                    style="margin-top: 1rem;">
-                                    <i class="fa-solid fa-plus"></i> Ajouter une ligne
-                                </button>
-                            </div>
                         </div>
                     </div>
                     <button type="submit" class="btn-primary btn-block">Créer mon Agent</button>
@@ -439,12 +411,13 @@
                     <p><strong>Inscrit le:</strong> <span id="modal-created"></span></p>
                 </div>
 
-                <div class="modal-section" id="modal-menu-section" style="display: none;">
-                    <h3>Menu Extrait par IA</h3>
-                    <div id="modal-menu-items"></div>
-                    <button onclick="app.copyMenuToClipboard()" class="btn-secondary" style="margin-top: 1rem;">
-                        <i class="fa-solid fa-copy"></i> Copier le menu
-                    </button>
+                <div class="modal-section" id="modal-menu-photo-section" style="display: none;">
+                    <h3>Photo du Menu</h3>
+                    <img id="modal-menu-photo" src="" alt="Menu"
+                        style="width: 100%; border-radius: 8px; margin-top: 0.5rem; cursor: pointer;"
+                        onclick="window.open(this.src, '_blank')">
+                    <p style="font-size: 0.8rem; color: #aaa; margin-top: 0.5rem;">Cliquez sur l'image pour voir en
+                        taille réelle</p>
                 </div>
 
                 <div class="modal-actions">
