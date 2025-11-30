@@ -19,9 +19,9 @@ serve(async (req) => {
 
         const { image_base64, pizzeria_id } = await req.json()
 
-        if (!image_base64 || !pizzeria_id) {
+        if (!image_base64) {
             return new Response(
-                JSON.stringify({ error: 'image_base64 and pizzeria_id are required' }),
+                JSON.stringify({ error: 'image_base64 is required' }),
                 { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             )
         }
@@ -92,18 +92,20 @@ serve(async (req) => {
             )
         }
 
-        // Sauvegarder dans la DB
-        const { error: updateError } = await supabaseClient
-            .from('pizzerias')
-            .update({ menu_json: menuJson })
-            .eq('id', pizzeria_id)
+        // Sauvegarder dans la DB si pizzeria_id est fourni
+        if (pizzeria_id) {
+            const { error: updateError } = await supabaseClient
+                .from('pizzerias')
+                .update({ menu_json: menuJson })
+                .eq('id', pizzeria_id)
 
-        if (updateError) {
-            console.error('DB update error:', updateError)
-            return new Response(
-                JSON.stringify({ error: 'Failed to save menu', details: updateError.message }),
-                { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            )
+            if (updateError) {
+                console.error('DB update error:', updateError)
+                return new Response(
+                    JSON.stringify({ error: 'Failed to save menu', details: updateError.message }),
+                    { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                )
+            }
         }
 
         return new Response(

@@ -163,6 +163,7 @@ const app = {
 
         // Show preview
         preview.style.display = 'block';
+        img.style.display = 'block'; // Reset display in case it was hidden
         const reader = new FileReader();
         reader.onload = (e) => {
             img.src = e.target.result;
@@ -181,31 +182,33 @@ const app = {
             extractedDiv.style.display = 'none';
 
             try {
-                const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=AIzaSyDNFnTkCLWFDIVVlnmTVxWjvPCZPkOXPqM', {
+                const { data: { session } } = await supabase.auth.getSession();
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/analyze-menu`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}`
+                    },
                     body: JSON.stringify({
-                        contents: [{
-                            parts: [
-                                { text: "Analyse cette photo de menu de pizzeria. Extrais UNIQUEMENT les noms de pizzas et leurs prix. Réponds avec un tableau JSON au format: [{\"name\": \"Pizza Margherita\", \"price\": 12.50}]. Ne retourne rien d'autre que le JSON valide, sans markdown ni texte supplémentaire." },
-                                { inline_data: { mime_type: "image/jpeg", data: base64 } }
-                            ]
-                        }]
+                        image_base64: base64
+                        // pizzeria_id is optional now, not sending it for preview
                     })
                 });
 
                 const result = await response.json();
-                const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
 
-                if (text) {
-                    const cleanedText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-                    app.extractedMenu = JSON.parse(cleanedText);
+                if (result.success && result.menu) {
+                    app.extractedMenu = result.menu;
 
                     statusDiv.style.display = 'none';
                     extractedDiv.style.display = 'block';
+
+                    // Hide the image preview to show only the grid
+                    img.style.display = 'none';
+
                     app.renderMenuTable();
                 } else {
-                    throw new Error('Pas de réponse de Gemini');
+                    throw new Error(result.error || 'Erreur inconnue');
                 }
             } catch (err) {
                 console.error('Menu analysis error:', err);
