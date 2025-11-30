@@ -149,6 +149,34 @@ const app = {
         }
     },
 
+    menuPhotoBase64: null,
+
+    previewMenuPhoto: async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const preview = document.getElementById('menuPhotoPreview');
+        const img = document.getElementById('menuPhotoImg');
+        const statusDiv = document.getElementById('menuAnalysisStatus');
+        const extractedDiv = document.getElementById('menuExtracted');
+
+        // Show preview
+        preview.style.display = 'block';
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+
+        // Convert to base64 for API
+        const base64Reader = new FileReader();
+        base64Reader.onload = async (e) => {
+            const base64 = e.target.result.split(',')[1];
+            app.menuPhotoBase64 = base64;
+        };
+        base64Reader.readAsDataURL(file);
+    },
+
     handleOnboarding: async (e) => {
         e.preventDefault();
         const form = e.target;
@@ -164,7 +192,7 @@ const app = {
         const cuisine = document.getElementById('pizzeriaCuisine').value;
         const user = app.state.session.user;
 
-        const { error } = await supabase
+        const { data: pizzeriaData, error } = await supabase
             .from('pizzerias')
             .insert([
                 {
@@ -176,7 +204,52 @@ const app = {
                     cuisine: cuisine,
                     status: 'pending'
                 }
-            ]);
+            ])
+            .select()
+            .single();
+
+        if (error) {
+            alert('Erreur: ' + error.message);
+            submitBtn.disabled = false;
+            submitBtn.innerText = originalText;
+            return;
+        }
+
+        // Analyze menu if photo provided
+        if (app.menuPhotoBase64) {
+            const statusDiv = document.getElementById('menuAnalysisStatus');
+            const extractedDiv = document.getElementById('menuExtracted');
+            statusDiv.style.display = 'block';
+
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/analyze-menu`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}`
+                    },
+                    body: JSON.stringify({
+                        image_base64: app.menuPhotoBase64,
+                        pizzeria_id: pizzeriaData.id
+                    })
+                });
+
+                const result = await response.json();
+                statusDiv.style.display = 'none';
+
+                if (result.success) {
+                    extractedDiv.style.display = 'block';
+                    const menuItems = document.getElementById('menuItems');
+                    menuItems.innerHTML = result.menu.map(item =>
+                        `<p><strong>${item.name}</strong>: ${item.price}€</p>`
+                    ).join('');
+                }
+            } catch (err) {
+                console.error('Menu analysis error:', err);
+                statusDiv.innerHTML = '<p style="color: var(--error);">Erreur lors de l\'analyse du menu</p>';
+            }
+        }
 
         if (error) {
             alert('Erreur lors de la création: ' + error.message);
@@ -264,6 +337,14 @@ const app = {
         }
 
         // Charger les commandes réelles
+        // Populate header
+        if (document.getElementById('pizzeria-name-header')) {
+            document.getElementById('pizzeria-name-header').innerText = pizzeria.name;
+        }
+        if (document.getElementById('pizzeria-contact-header')) {
+            document.getElementById('pizzeria-contact-header').innerText = `Téléphone de contact: ${pizzeria.contact_phone || 'Non renseigné'}`;
+        }
+
         const { data: orders, error: ordersError } = await supabase
             .from('orders')
             .select('*')
@@ -285,29 +366,28 @@ const app = {
         }
 
         if (!ordersError) {
-            const ordersList = document.querySelector('.orders-list');
+            const ordersList = document.getElementById('orders-list') || document.querySelector('.orders-list-dark');
             if (ordersList) {
                 if (orders && orders.length > 0) {
                     ordersList.innerHTML = orders.map(order => {
                         const timeAgo = new Date(order.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-                        const itemsHtml = Array.isArray(order.items)
-                            ? order.items.map(item => `<p>${item.quantity || 1}x ${item.name}</p>`).join('')
-                            : '<p>Détails non disponibles</p>';
+                        const itemsText = Array.isArray(order.items)
+                            ? order.items.map(item => `${item.quantity || 1}x ${item.name}`).join(', ')
+                            : 'Détails non disponibles';
 
                         return `
-                            <div class="order-card ${order.status === 'new' ? 'new' : ''}">
-                                <div class="order-header">
-                                    <span class="time">${timeAgo}</span>
-                                    <span class="tag ${order.status === 'done' ? 'done' : ''}">${order.status === 'new' ? 'À préparer' : 'Prête'}</span>
-                                </div>
-                                <div class="order-items">
-                                    ${itemsHtml}
-                                    ${order.menu ? `<p style="font-style: italic; color: var(--text-muted);">Menu: ${order.menu}</p>` : ''}
-                                    ${order.delivery_address ? `<p style="font-size: 0.85rem; color: var(--text-muted);">📍 ${order.delivery_address}</p>` : ''}
-                                    ${order.customer_phone ? `<p style="font-size: 0.85rem; color: var(--text-muted);">📞 ${order.customer_phone}</p>` : ''}
+                            <div class="order-card-dark">
+                                <div>
+                                    <div class="order-time">${timeAgo}</div>
+                                    <div class="order-status-badge">À préparer</div>
+                                    <div class="order-items">${itemsText}</div>
+                                    <div class="order-details">
+                                        ${order.delivery_address ? `<div><i class="fa-solid fa-location-dot"></i>${order.delivery_address}</div>` : ''}
+                                        ${order.customer_phone ? `<div><i class="fa-solid fa-phone"></i>${order.customer_phone}</div>` : ''}
+                                    </div>
                                 </div>
                                 <div class="order-actions">
-                                    <button class="btn-small btn-primary">Valider</button>
+                                    <button class="btn-validate" onclick="app.validateOrder('${order.id}')">Valider</button>
                                 </div>
                             </div>
                         `;
@@ -319,6 +399,21 @@ const app = {
         }
     },
 
+    validateOrder: async (orderId) => {
+        const { error } = await supabase
+            .from('orders')
+            .update({ status: 'done' })
+            .eq('id', orderId);
+
+        if (!error) {
+            app.loadDashboard(); // Reload to update display
+        } else {
+            alert('Erreur lors de la validation');
+        }
+    },
+
+    currentPizzeriaDetail: null,
+
     loadAdminDashboard: async () => {
         const list = document.getElementById('admin-pizzeria-list');
         const pendingCount = document.getElementById('admin-pending-count');
@@ -326,13 +421,13 @@ const app = {
 
         list.innerHTML = '<p>Chargement...</p>';
 
-        // Fetch all pizzerias (RLS policy allows this for emiliomoreau2012@gmail.com)
+        // Fetch all pizzerias
         const { data: pizzerias, error } = await supabase
             .from('pizzerias')
             .select('*');
 
         if (error) {
-            list.innerHTML = '<p class="error">Erreur de chargement (Êtes-vous connecté avec emiliomoreau2012@gmail.com ?)</p>';
+            list.innerHTML = '<p class="error">Erreur de chargement</p>';
             return;
         }
 
@@ -350,26 +445,82 @@ const app = {
 
         pending.forEach(p => {
             const card = document.createElement('div');
-            card.className = 'pizzeria-card';
+            card.className = 'pizzeria-card-compact';
+            const createdDate = new Date(p.created_at).toLocaleDateString('fr-FR');
             card.innerHTML = `
-                <div class="info">
-                    <h4>${p.name}</h4>
-                    <p><strong>Email:</strong> ${p.user_email || 'Non renseigné'}</p>
-                    <p><strong>Téléphone:</strong> ${p.contact_phone || 'Non renseigné'}</p>
-                    <p><strong>Adresse:</strong> ${p.address || 'Non renseigné'}</p>
-                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">ID: ${p.id}</p>
+                <div class="pizzeria-info">
+                    <h3>${p.name}</h3>
+                    <span class="date">Inscrit le: ${createdDate}</span>
                 </div>
-                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                    <button onclick="app.copyWebhookJSON('${p.id}')" class="btn-small btn-secondary">
-                        <i class="fa-solid fa-copy"></i> Copier JSON Webhook
-                    </button>
-                    <button onclick="app.activatePizzeria('${p.id}')" class="btn-small btn-primary">
-                        <i class="fa-solid fa-check"></i> Configurer & Activer
-                    </button>
-                </div>
+                <button onclick="app.viewPizzeriaDetail('${p.id}')" class="btn-small btn-primary">
+                    Voir la pizzeria
+                </button>
             `;
             list.appendChild(card);
         });
+    },
+
+    viewPizzeriaDetail: async (pizzeriaId) => {
+        const { data: pizzeria, error } = await supabase
+            .from('pizzerias')
+            .select('*')
+            .eq('id', pizzeriaId)
+            .single();
+
+        if (error || !pizzeria) {
+            alert('Erreur lors du chargement des détails');
+            return;
+        }
+
+        app.currentPizzeriaDetail = pizzeria;
+
+        // Populate modal
+        document.getElementById('modal-pizzeria-name').innerText = pizzeria.name;
+        document.getElementById('modal-email').innerText = pizzeria.user_email || 'Non renseigné';
+        document.getElementById('modal-phone').innerText = pizzeria.contact_phone || 'Non renseigné';
+        document.getElementById('modal-address').innerText = pizzeria.address || 'Non renseigné';
+        document.getElementById('modal-created').innerText = new Date(pizzeria.created_at).toLocaleDateString('fr-FR');
+
+        // Show menu if available
+        const menuSection = document.getElementById('modal-menu-section');
+        const menuItems = document.getElementById('modal-menu-items');
+        if (pizzeria.menu_json && pizzeria.menu_json.length > 0) {
+            menuSection.style.display = 'block';
+            menuItems.innerHTML = pizzeria.menu_json.map(item =>
+                `<p><strong>${item.name}</strong>: ${item.price}€</p>`
+            ).join('');
+        } else {
+            menuSection.style.display = 'none';
+        }
+
+        // Show modal
+        document.getElementById('pizzeria-detail-modal').style.display = 'flex';
+    },
+
+    closePizzeriaDetail: () => {
+        document.getElementById('pizzeria-detail-modal').style.display = 'none';
+        app.currentPizzeriaDetail = null;
+    },
+
+    copyMenuToClipboard: () => {
+        if (!app.currentPizzeriaDetail || !app.currentPizzeriaDetail.menu_json) {
+            alert('Aucun menu à copier');
+            return;
+        }
+
+        const menuText = app.currentPizzeriaDetail.menu_json.map(item =>
+            `${item.name}: ${item.price}€`
+        ).join('\n');
+
+        navigator.clipboard.writeText(menuText).then(() => {
+            alert('Menu copié dans le presse-papier !');
+        });
+    },
+
+    activatePizzeriaFromModal: async () => {
+        if (!app.currentPizzeriaDetail) return;
+        await app.activatePizzeria(app.currentPizzeriaDetail.id);
+        app.closePizzeriaDetail();
     },
 
     activatePizzeria: async (pizzeriaId) => {

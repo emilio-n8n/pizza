@@ -80,6 +80,70 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Footer -->
+            <footer id="footer">
+                <div class="footer-content">
+                    <div class="footer-section">
+                        <div class="footer-logo">
+                            <i class="fa-solid fa-pizza-slice"></i> PizzaVoice<span>AI</span>
+                        </div>
+                        <p class="footer-tagline">L'agent vocal intelligent pour votre pizzeria. Ne ratez plus jamais
+                            une
+                            commande.</p>
+                        <div class="social-links">
+                            <a href="#" aria-label="Twitter"><i class="fa-brands fa-twitter"></i></a>
+                            <a href="#" aria-label="LinkedIn"><i class="fa-brands fa-linkedin"></i></a>
+                            <a href="#" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
+                            <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                        </div>
+                    </div>
+
+                    <div class="footer-section">
+                        <h4>Produit</h4>
+                        <ul>
+                            <li><a href="#">Fonctionnalités</a></li>
+                            <li><a href="#">Tarifs</a></li>
+                            <li><a href="#">Démo</a></li>
+                            <li><a href="#">FAQ</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="footer-section">
+                        <h4>Entreprise</h4>
+                        <ul>
+                            <li><a href="#">À propos</a></li>
+                            <li><a href="#">Blog</a></li>
+                            <li><a href="#">Carrières</a></li>
+                            <li><a href="#">Contact</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="footer-section">
+                        <h4>Ressources</h4>
+                        <ul>
+                            <li><a href="#">Documentation</a></li>
+                            <li><a href="#">Support</a></li>
+                            <li><a href="#">Guides</a></li>
+                            <li><a href="#">API</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="footer-section">
+                        <h4>Légal</h4>
+                        <ul>
+                            <li><a href="#">Confidentialité</a></li>
+                            <li><a href="#">CGU</a></li>
+                            <li><a href="#">Cookies</a></li>
+                            <li><a href="#">Mentions légales</a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="footer-bottom">
+                    <p>&copy; 2024 PizzaVoice AI. Tous droits réservés.</p>
+                </div>
+            </footer>
         </section>
 
         <!-- 1. Inscription -->
@@ -98,7 +162,8 @@
                     </div>
                     <button type="submit" class="btn-primary btn-block">S'inscrire</button>
                 </form>
-                <p class="switch-auth">Déjà un compte ? <a href="#" onclick="app.navigateTo('login')">Se connecter</a>
+                <p class="switch-auth">Déjà un compte ? <a href="#"
+                        onclick="event.preventDefault(); app.navigateTo('login')">Se connecter</a>
                 </p>
             </div>
         </section>
@@ -155,9 +220,21 @@
                             <option>Napolitaine</option>
                         </select>
                     </div>
-                    <div class="file-upload">
-                        <i class="fa-solid fa-cloud-arrow-up"></i>
-                        <p>Glissez votre menu (PDF/JPG)</p>
+                    <div class="input-group">
+                        <label>Photo de votre menu</label>
+                        <input type="file" id="menuPhoto" accept="image/*" onchange="app.previewMenuPhoto(event)">
+                        <div id="menuPhotoPreview" style="display: none; margin-top: 1rem;">
+                            <img id="menuPhotoImg" style="max-width: 100%; border-radius: 8px; margin-bottom: 1rem;">
+                            <div id="menuAnalysisStatus"
+                                style="padding: 1rem; background: var(--bg-secondary); border-radius: 8px; display: none;">
+                                <p style="margin: 0;"><i class="fa-solid fa-spinner fa-spin"></i> Analyse du menu en
+                                    cours...</p>
+                            </div>
+                            <div id="menuExtracted" style="display: none;">
+                                <h4>Menu extrait :</h4>
+                                <div id="menuItems"></div>
+                            </div>
+                        </div>
                     </div>
                     <button type="submit" class="btn-primary btn-block">Créer mon Agent</button>
                 </form>
@@ -326,6 +403,38 @@
             </div>
         </section>
 
+        <!-- ADMIN: Pizzeria Detail Modal -->
+        <div id="pizzeria-detail-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <span class="modal-close" onclick="app.closePizzeriaDetail()">&times;</span>
+                <h2 id="modal-pizzeria-name">Détails Pizzeria</h2>
+
+                <div class="modal-section">
+                    <h3>Informations</h3>
+                    <p><strong>Email:</strong> <span id="modal-email"></span></p>
+                    <p><strong>Téléphone:</strong> <span id="modal-phone"></span></p>
+                    <p><strong>Adresse:</strong> <span id="modal-address"></span></p>
+                    <p><strong>Inscrit le:</strong> <span id="modal-created"></span></p>
+                </div>
+
+                <div class="modal-section" id="modal-menu-section" style="display: none;">
+                    <h3>Menu Extrait par IA</h3>
+                    <div id="modal-menu-items"></div>
+                    <button onclick="app.copyMenuToClipboard()" class="btn-secondary" style="margin-top: 1rem;">
+                        <i class="fa-solid fa-copy"></i> Copier le menu
+                    </button>
+                </div>
+
+                <div class="modal-actions">
+                    <button onclick="app.activatePizzeriaFromModal()" class="btn-primary">
+                        <i class="fa-solid fa-check"></i> Activer
+                    </button>
+                    <button onclick="app.closePizzeriaDetail()" class="btn-secondary">Fermer</button>
+                </div>
+            </div>
+        </div>
+        </section>
+
         <!-- 6. Connexion -->
         <section id="login" class="view">
             <div class="auth-container">
@@ -347,52 +456,57 @@
 
         <!-- 7. Tableau de bord -->
         <section id="dashboard" class="view">
-            <div class="dashboard-layout">
-                <aside class="sidebar">
+            <div class="dashboard-layout dark-theme">
+                <aside class="sidebar-dark">
                     <div class="logo-small"><i class="fa-solid fa-pizza-slice"></i></div>
                     <ul class="menu">
-                        <li class="active" onclick="app.switchDashboardTab('orders')" id="menu-orders"><i
-                                class="fa-solid fa-list"></i> Commandes</li>
-                        <li onclick="app.switchDashboardTab('stats')" id="menu-stats"><i
-                                class="fa-solid fa-chart-line"></i> Stats</li>
+                        <li class="active" onclick="app.switchDashboardTab('orders')" id="menu-orders">
+                            <i class="fa-solid fa-list"></i> Commandes
+                        </li>
+                        <li onclick="app.switchDashboardTab('stats')" id="menu-stats">
+                            <i class="fa-solid fa-chart-line"></i> Stats
+                        </li>
                     </ul>
-                    <button onclick="app.navigateTo('home')" class="logout"><i
-                            class="fa-solid fa-right-from-bracket"></i></button>
+                    <button onclick="app.navigateTo('home')" class="logout">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
                 </aside>
-                <div class="main-content">
-                    <header>
-                        <h2 id="dash-title">Commandes du jour</h2>
-                        <div class="status-badge online"><i class="fa-solid fa-circle"></i> Agent Actif</div>
+                <div class="main-content-dark">
+                    <header class="dashboard-header-dark">
+                        <div>
+                            <h2 id="dash-title">Commandes - <span id="pizzeria-name-header"></span></h2>
+                            <p id="pizzeria-contact-header"
+                                style="color: #888; font-size: 0.9rem; margin-top: 0.25rem;"></p>
+                        </div>
+                        <div class="status-badge-green">
+                            <i class="fa-solid fa-circle"></i> Agent Actif
+                        </div>
                     </header>
 
                     <div id="tab-orders" class="dashboard-tab">
-                        <div class="info-box" id="pizzeria-contact-info" style="margin-bottom: 2rem;">
-                            <!-- Populated by JS -->
-                        </div>
-
-                        <div class="stats-row">
-                            <div class="stat-card">
+                        <div class="stats-row-dark">
+                            <div class="stat-card-dark">
                                 <h3>Commandes</h3>
                                 <div class="value" id="stat-orders-count">0</div>
                             </div>
-                            <div class="stat-card">
+                            <div class="stat-card-dark">
                                 <h3>Chiffre d'affaires</h3>
                                 <div class="value" id="stat-revenue">0 €</div>
                             </div>
-                            <div class="stat-card">
+                            <div class="stat-card-dark">
                                 <h3>Appels manqués</h3>
                                 <div class="value danger" id="stat-missed-calls">0</div>
                             </div>
                         </div>
 
-                        <div class="orders-list">
+                        <div class="orders-list-dark" id="orders-list">
                             <div class="empty-state">Chargement des commandes...</div>
                         </div>
                     </div>
 
                     <div id="tab-stats" class="dashboard-tab" style="display: none;">
                         <div class="stats-container">
-                            <div class="stat-card big-stat">
+                            <div class="stat-card-dark big-stat">
                                 <div class="icon-circle"><i class="fa-solid fa-phone-volume"></i></div>
                                 <h3>Total Appels Reçus</h3>
                                 <div class="value" id="total-calls-count">0</div>
@@ -406,68 +520,7 @@
 
     </main>
 
-    <!-- Footer -->
-    <footer id="footer">
-        <div class="footer-content">
-            <div class="footer-section">
-                <div class="footer-logo">
-                    <i class="fa-solid fa-pizza-slice"></i> PizzaVoice<span>AI</span>
-                </div>
-                <p class="footer-tagline">L'agent vocal intelligent pour votre pizzeria. Ne ratez plus jamais une
-                    commande.</p>
-                <div class="social-links">
-                    <a href="#" aria-label="Twitter"><i class="fa-brands fa-twitter"></i></a>
-                    <a href="#" aria-label="LinkedIn"><i class="fa-brands fa-linkedin"></i></a>
-                    <a href="#" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
-                    <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
-                </div>
-            </div>
 
-            <div class="footer-section">
-                <h4>Produit</h4>
-                <ul>
-                    <li><a href="#">Fonctionnalités</a></li>
-                    <li><a href="#">Tarifs</a></li>
-                    <li><a href="#">Démo</a></li>
-                    <li><a href="#">FAQ</a></li>
-                </ul>
-            </div>
-
-            <div class="footer-section">
-                <h4>Entreprise</h4>
-                <ul>
-                    <li><a href="#">À propos</a></li>
-                    <li><a href="#">Blog</a></li>
-                    <li><a href="#">Carrières</a></li>
-                    <li><a href="#">Contact</a></li>
-                </ul>
-            </div>
-
-            <div class="footer-section">
-                <h4>Ressources</h4>
-                <ul>
-                    <li><a href="#">Documentation</a></li>
-                    <li><a href="#">Support</a></li>
-                    <li><a href="#">Guides</a></li>
-                    <li><a href="#">API</a></li>
-                </ul>
-            </div>
-
-            <div class="footer-section">
-                <h4>Légal</h4>
-                <ul>
-                    <li><a href="#">Confidentialité</a></li>
-                    <li><a href="#">CGU</a></li>
-                    <li><a href="#">Cookies</a></li>
-                    <li><a href="#">Mentions légales</a></li>
-                </ul>
-            </div>
-        </div>
-
-        <div class="footer-bottom">
-            <p>&copy; 2024 PizzaVoice AI. Tous droits réservés.</p>
-        </div>
-    </footer>
 
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

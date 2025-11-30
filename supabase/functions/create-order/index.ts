@@ -18,7 +18,23 @@ serve(async (req) => {
             Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
         )
 
-        const { pizzeria_id, customer_phone, items, menu, delivery_address, total } = await req.json()
+        let body = await req.json()
+        console.log('Received webhook body:', JSON.stringify(body))
+
+        // Retell may wrap the payload in 'args' or 'arguments'
+        if (body.args) {
+            body = body.args
+        } else if (body.arguments) {
+            body = body.arguments
+        }
+
+        let { pizzeria_id, customer_phone, items, menu, delivery_address, total } = body
+
+        // Fallback: Check query params for pizzeria_id if not in body
+        if (!pizzeria_id) {
+            const url = new URL(req.url)
+            pizzeria_id = url.searchParams.get('pizzeria_id')
+        }
 
         // Validation
         if (!pizzeria_id) {
