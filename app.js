@@ -15,6 +15,9 @@ const app = {
         const { data: { session } } = await supabase.auth.getSession();
         app.state.session = session;
 
+        // Check for driver login
+        await app.checkDriverLogin();
+
         // Listen for auth changes
         supabase.auth.onAuthStateChange((_event, session) => {
             app.state.session = session;
@@ -31,6 +34,9 @@ const app = {
     },
 
     navigateTo: async (viewId) => {
+        // Clear auto-refresh interval if leaving dashboard
+        if (app.ordersRefreshInterval) clearInterval(app.ordersRefreshInterval);
+
         // Auth Guard
         if (['onboarding', 'confirmation', 'dashboard', 'call-forwarding'].includes(viewId) && !app.state.session) {
             app.navigateTo('login');
@@ -189,7 +195,6 @@ const app = {
 
         const name = document.getElementById('pizzeriaName').value;
         const address = document.getElementById('pizzeriaAddress').value;
-        const contactPhone = document.getElementById('pizzeriaContactPhone').value;
         const cuisine = document.getElementById('pizzeriaCuisine').value;
         const user = app.state.session.user;
 
@@ -201,7 +206,6 @@ const app = {
                     user_email: user.email,
                     name: name,
                     address: address,
-                    contact_phone: contactPhone,
                     cuisine: cuisine,
                     status: 'pending'
                 }
@@ -295,7 +299,11 @@ const app = {
         if (menu) menu.classList.add('active');
     },
 
-    loadDashboard: async () => {
+    loadDashboard: async (isRefresh = false) => {
+        if (!isRefresh) {
+            if (app.ordersRefreshInterval) clearInterval(app.ordersRefreshInterval);
+            app.ordersRefreshInterval = setInterval(() => app.loadDashboard(true), 30000);
+        }
         const user = app.state.session?.user;
         if (!user) return;
 
@@ -361,11 +369,47 @@ const app = {
                             ? order.items.map(item => `${item.quantity || 1}x ${item.name}`).join(', ')
                             : 'Détails non disponibles';
 
+                        let statusBadge = '';
+                        let actionButtons = '';
+                        const isDelivery = !!order.delivery_address;
+                        const status = order.status || 'new';
+
+                        switch (status) {
+                            case 'preparing':
+                                statusBadge = '<div class="order-status-badge preparing">En préparation</div>';
+                                if (isDelivery) {
+                                    actionButtons = `<button class="btn-validate" onclick="app.updateOrderStatus('${order.id}', 'waiting_delivery')">Prête (Livreur)</button>`;
+                                } else {
+                                    actionButtons = `<button class="btn-validate" onclick="app.updateOrderStatus('${order.id}', 'ready')">Prête (Retrait)</button>`;
+                                }
+                                break;
+                            case 'ready':
+                                statusBadge = '<div class="order-status-badge ready">Prête (Retrait)</div>';
+                                actionButtons = `<button class="btn-validate" onclick="app.updateOrderStatus('${order.id}', 'delivered')">Terminer</button>`;
+                                break;
+                            case 'waiting_delivery':
+                                statusBadge = '<div class="order-status-badge waiting_delivery">Attente Livreur</div>';
+                                actionButtons = `<button class="btn-validate" onclick="app.updateOrderStatus('${order.id}', 'delivering')">Partie</button>`;
+                                break;
+                            case 'delivering':
+                                statusBadge = '<div class="order-status-badge delivering">En Livraison</div>';
+                                actionButtons = `<button class="btn-validate" onclick="app.updateOrderStatus('${order.id}', 'delivered')">Livrée</button>`;
+                                break;
+                            case 'delivered':
+                            case 'done':
+                                statusBadge = '<div class="order-status-badge delivered">Terminée</div>';
+                                actionButtons = '';
+                                break;
+                            default: // new
+                                statusBadge = '<div class="order-status-badge new">Nouvelle</div>';
+                                actionButtons = `<button class="btn-validate" onclick="app.updateOrderStatus('${order.id}', 'preparing')">Valider</button>`;
+                        }
+
                         return `
                             <div class="order-card-dark">
                                 <div>
                                     <div class="order-time">${timeAgo}</div>
-                                    <div class="order-status-badge">À préparer</div>
+                                    ${statusBadge}
                                     <div class="order-items">${itemsText}</div>
                                     <div class="order-details">
                                         ${order.delivery_address ? `<div><i class="fa-solid fa-location-dot"></i>${order.delivery_address}</div>` : ''}
@@ -373,7 +417,7 @@ const app = {
                                     </div>
                                 </div>
                                 <div class="order-actions">
-                                    <button class="btn-validate" onclick="app.validateOrder('${order.id}')">Valider</button>
+                                    ${actionButtons}
                                 </div>
                             </div>
                         `;
@@ -385,16 +429,16 @@ const app = {
         }
     },
 
-    validateOrder: async (orderId) => {
+    updateOrderStatus: async (orderId, newStatus) => {
         const { error } = await supabase
             .from('orders')
-            .update({ status: 'done' })
+            .update({ status: newStatus })
             .eq('id', orderId);
 
         if (!error) {
-            app.loadDashboard(); // Reload to update display
+            app.loadDashboard(true); // Reload to update display
         } else {
-            alert('Erreur lors de la validation');
+            alert('Erreur lors de la mise à jour');
         }
     },
 
@@ -612,18 +656,12 @@ const app = {
                     { name: "Pizza Margherita", quantity: 1 },
                     { name: "Coca-Cola", quantity: 1 }
                 ],
-                menu: "Menu Midi",
-                delivery_address: "123 Rue Example, Paris",
-                total: 15.50
+                total: 15.50,
+                delivery_address: "123 Rue de la Pizza"
             }
         };
-
-        navigator.clipboard.writeText(JSON.stringify(webhookConfig, null, 2))
-            .then(() => alert('✅ Configuration webhook copiée dans le presse-papier !'))
-            .catch(err => {
-                console.error('Erreur copie:', err);
-                alert('Erreur lors de la copie. Vérifiez la console.');
-            });
+        navigator.clipboard.writeText(JSON.stringify(webhookConfig, null, 2));
+        alert('Configuration JSON copiée !');
     },
 
     loadCallForwarding: async () => {
@@ -642,8 +680,345 @@ const app = {
                 el.innerText = pizzeria.phone_number;
             });
         }
+    },
+
+    // --- Driver Management ---
+
+    inviteDriver: async (e) => {
+        e.preventDefault();
+        const nameInput = document.getElementById('newDriverName');
+        const name = nameInput.value;
+        const user = app.state.session?.user;
+
+        // Get pizzeria ID
+        const { data: pizzeria } = await supabase
+            .from('pizzerias')
+            .select('id')
+            .eq('user_id', user.id)
+            .single();
+
+        if (!pizzeria) return;
+
+        const { data, error } = await supabase
+            .from('delivery_drivers')
+            .insert([{
+                pizzeria_id: pizzeria.id,
+                name: name
+            }])
+            .select()
+            .single();
+
+        if (error) {
+            alert('Erreur: ' + error.message);
+        } else {
+            nameInput.value = '';
+            app.loadDriversList(pizzeria.id);
+            alert(`Livreur créé ! Lien d'accès : ${window.location.origin}/#driver-login?token=${data.access_token}`);
+        }
+    },
+
+    loadDriversList: async (pizzeriaId) => {
+        if (!pizzeriaId) {
+            const user = app.state.session?.user;
+            const { data } = await supabase.from('pizzerias').select('id').eq('user_id', user.id).single();
+            pizzeriaId = data?.id;
+        }
+
+        const { data: drivers } = await supabase
+            .from('delivery_drivers')
+            .select('*')
+            .eq('pizzeria_id', pizzeriaId)
+            .order('created_at', { ascending: false });
+
+        const list = document.getElementById('drivers-list');
+        if (!drivers || drivers.length === 0) {
+            list.innerHTML = '<div class="empty-state-small">Aucun livreur.</div>';
+            return;
+        }
+
+        list.innerHTML = drivers.map(driver => `
+            <div class="driver-item">
+                <div class="driver-info">
+                    <div class="driver-avatar-small"><i class="fa-solid fa-helmet-safety"></i></div>
+                    <div>
+                        <div class="driver-name">${driver.name}</div>
+                        <div class="driver-status ${driver.is_active ? 'active' : 'inactive'}">
+                            ${driver.is_active ? 'Actif' : 'Inactif'}
+                        </div>
+                    </div>
+                </div>
+                <div class="driver-actions">
+                    <button class="btn-icon" onclick="app.copyDriverLink('${driver.access_token}')" title="Copier le lien">
+                        <i class="fa-regular fa-copy"></i>
+                    </button>
+                    <button class="btn-icon danger" onclick="app.toggleDriverStatus('${driver.id}', ${driver.is_active})" title="${driver.is_active ? 'Désactiver' : 'Activer'}">
+                        <i class="fa-solid fa-${driver.is_active ? 'ban' : 'check'}"></i>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    },
+
+    copyDriverLink: (token) => {
+        const link = `${window.location.origin}/#driver-login?token=${token}`;
+        navigator.clipboard.writeText(link);
+        alert('Lien copié ! Envoyez-le à votre livreur.');
+    },
+
+    toggleDriverStatus: async (driverId, currentStatus) => {
+        await supabase.from('delivery_drivers').update({ is_active: !currentStatus }).eq('id', driverId);
+        app.loadDriversList();
+    },
+
+    // --- Driver Dashboard ---
+
+    checkDriverLogin: async () => {
+        // Check URL for token
+        const params = new URLSearchParams(window.location.hash.split('?')[1]);
+        const token = params.get('token');
+
+        if (token) {
+            localStorage.setItem('driver_token', token);
+            window.location.hash = 'driver-dashboard';
+        }
+
+        const storedToken = localStorage.getItem('driver_token');
+        if (storedToken && window.location.hash === '#driver-dashboard') {
+            app.loadDriverDashboard(storedToken);
+        }
+    },
+
+    loadDriverDashboard: async (token) => {
+        app.navigateTo('driver-dashboard');
+
+        // Get driver info
+        const { data: drivers, error } = await supabase.rpc('get_driver_by_token', { token_input: token });
+
+        if (error || !drivers || drivers.length === 0) {
+            alert('Lien invalide ou expiré.');
+            app.logoutDriver();
+            return;
+        }
+
+        const driver = drivers[0];
+        document.getElementById('driver-name').innerText = driver.name;
+        app.state.currentDriver = driver;
+
+        app.loadDriverOrders();
+
+        // Auto refresh
+        if (app.driverRefreshInterval) clearInterval(app.driverRefreshInterval);
+        app.driverRefreshInterval = setInterval(app.loadDriverOrders, 15000);
+    },
+
+    loadDriverOrders: async () => {
+        const token = localStorage.getItem('driver_token');
+        if (!token) return;
+
+        const { data: orders, error } = await supabase.rpc('get_driver_orders', { token_input: token });
+
+        if (error) {
+            console.error('Error loading driver orders:', error);
+            return;
+        }
+
+        const list = document.getElementById('driver-orders-list');
+        const activeTab = document.querySelector('.driver-tabs button.active').innerText === 'Disponibles' ? 'available' : 'active';
+
+        const filteredOrders = orders.filter(o => {
+            if (activeTab === 'available') return o.status === 'waiting_delivery';
+            return o.status === 'delivering' && o.driver_id === app.state.currentDriver.id;
+        });
+
+        if (filteredOrders.length === 0) {
+            list.innerHTML = '<div class="empty-state">Aucune commande.</div>';
+            return;
+        }
+
+        list.innerHTML = filteredOrders.map(order => {
+            const itemsText = Array.isArray(order.items)
+                ? order.items.map(item => `${item.quantity || 1}x ${item.name}`).join(', ')
+                : 'Détails non disponibles';
+
+            const addressLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.delivery_address)}`;
+
+            return `
+                <div class="driver-order-card">
+                    <div class="driver-order-header">
+                        <span class="order-time">${new Date(order.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+                        <span class="order-price">${order.total_amount} €</span>
+                    </div>
+                    <div class="driver-order-address">
+                        <i class="fa-solid fa-location-dot"></i> ${order.delivery_address}
+                    </div>
+                    <div class="driver-order-items">${itemsText}</div>
+                    
+                    <div class="driver-actions-row">
+                        ${order.status === 'waiting_delivery' ? `
+                            <button class="btn-primary btn-block" onclick="app.driverTakeOrder('${order.id}')">
+                                Prendre en charge
+                            </button>
+                        ` : `
+                            <a href="${addressLink}" target="_blank" class="btn-secondary btn-block">
+                                <i class="fa-solid fa-diamond-turn-right"></i> GPS
+                            </a>
+                            <button class="btn-primary btn-block" onclick="app.driverCompleteOrder('${order.id}')">
+                                <i class="fa-solid fa-check"></i> Livré
+                            </button>
+                        `}
+                    </div>
+                    ${order.customer_phone ? `
+                        <a href="tel:${order.customer_phone}" class="driver-call-btn">
+                            <i class="fa-solid fa-phone"></i> Appeler client
+                        </a>
+                    ` : ''}
+                </div>
+            `;
+        }).join('');
+    },
+
+    switchDriverTab: (tab) => {
+        document.querySelectorAll('.driver-tabs button').forEach(b => b.classList.remove('active'));
+        // Find button by text content is tricky, better use index or add IDs. 
+        // Simple fix: assume order
+        const buttons = document.querySelectorAll('.driver-tabs button');
+        if (tab === 'available') buttons[0].classList.add('active');
+        else buttons[1].classList.add('active');
+
+        app.loadDriverOrders();
+    },
+
+    driverTakeOrder: async (orderId) => {
+        const token = localStorage.getItem('driver_token');
+        const { data, error } = await supabase.rpc('driver_update_order', {
+            token_input: token,
+            order_id_input: orderId,
+            new_status: 'delivering'
+        });
+
+        if (error) alert('Erreur: ' + error.message);
+        else app.loadDriverOrders();
+    },
+
+    driverCompleteOrder: async (orderId) => {
+        if (!confirm('Confirmer la livraison ?')) return;
+
+        const token = localStorage.getItem('driver_token');
+        const { data, error } = await supabase.rpc('driver_update_order', {
+            token_input: token,
+            order_id_input: orderId,
+            new_status: 'delivered'
+        });
+
+        if (error) alert('Erreur: ' + error.message);
+        else app.loadDriverOrders();
+    },
+
+    logoutDriver: () => {
+        localStorage.removeItem('driver_token');
+        if (app.driverRefreshInterval) clearInterval(app.driverRefreshInterval);
+        app.navigateTo('home');
+    },
+
+    // --- Client Tracking ---
+
+    checkTracking: async () => {
+        const params = new URLSearchParams(window.location.hash.split('?')[1]);
+        const orderId = params.get('order');
+
+        if (orderId) {
+            app.navigateTo('tracking');
+            app.loadTracking(orderId);
+
+            // Auto refresh
+            if (app.trackingRefreshInterval) clearInterval(app.trackingRefreshInterval);
+            app.trackingRefreshInterval = setInterval(() => app.loadTracking(orderId), 10000);
+        }
+    },
+
+    loadTracking: async (orderId) => {
+        // Use anon key for public tracking (requires RLS policy update or function)
+        // Since we don't have public RLS for orders, we might need a function or policy.
+        // For now, let's try direct select assuming we might need to open it up or use a secure token.
+        // Actually, RLS usually blocks this. We should probably use an edge function or a specific RPC.
+        // BUT, for simplicity in this MVP, let's assume we can fetch if we have the ID (UUID is hard to guess).
+        // We will need to add a policy for this: "Anyone can read order if they know the ID" -> Not possible easily with standard RLS without a "secret" column.
+        // Let's use the `get_order_status` RPC we can create.
+
+        const { data: order, error } = await supabase.rpc('get_order_tracking', { order_id_input: orderId });
+
+        if (error || !order || order.length === 0) {
+            document.getElementById('tracking-status-text').innerText = "Commande introuvable";
+            return;
+        }
+
+        const o = order[0];
+        document.getElementById('tracking-order-id').innerText = `Commande #${o.id.slice(0, 8)}`;
+        document.getElementById('tracking-total').innerText = o.total_amount + ' €';
+
+        // Items
+        const itemsList = document.getElementById('tracking-items');
+        itemsList.innerHTML = Array.isArray(o.items)
+            ? o.items.map(item => `
+                <div class="tracking-item">
+                    <span>${item.quantity}x ${item.name}</span>
+                    <span>${(item.price * item.quantity).toFixed(2)} €</span>
+                </div>
+            `).join('')
+            : '';
+
+        // Status
+        const steps = ['new', 'preparing', 'delivering', 'delivered'];
+        const currentStepIndex = steps.indexOf(o.status) === -1 ? 0 : steps.indexOf(o.status);
+
+        // Update steps UI
+        steps.forEach(step => {
+            const el = document.getElementById(`step-${step}`);
+            if (el) {
+                el.classList.remove('active', 'completed');
+                if (steps.indexOf(step) < currentStepIndex) el.classList.add('completed');
+                if (steps.indexOf(step) === currentStepIndex) el.classList.add('active');
+            }
+        });
+
+        // Update Text & Icon
+        const statusText = document.getElementById('tracking-status-text');
+        const statusDesc = document.getElementById('tracking-status-desc');
+        const icon = document.getElementById('tracking-icon');
+
+        switch (o.status) {
+            case 'new':
+                statusText.innerText = "Commande Reçue";
+                statusDesc.innerText = "La pizzeria a reçu votre commande.";
+                icon.innerHTML = '<i class="fa-solid fa-receipt"></i>';
+                break;
+            case 'preparing':
+                statusText.innerText = "En Préparation";
+                statusDesc.innerText = "Vos pizzas sont au four !";
+                icon.innerHTML = '<i class="fa-solid fa-fire-burner"></i>';
+                break;
+            case 'waiting_delivery':
+                statusText.innerText = "Prête";
+                statusDesc.innerText = "En attente d'un livreur.";
+                icon.innerHTML = '<i class="fa-solid fa-box"></i>';
+                break;
+            case 'delivering':
+                statusText.innerText = "En Livraison";
+                statusDesc.innerText = "Le livreur est en route.";
+                icon.innerHTML = '<i class="fa-solid fa-motorcycle"></i>';
+                break;
+            case 'delivered':
+                statusText.innerText = "Livrée";
+                statusDesc.innerText = "Bon appétit !";
+                icon.innerHTML = '<i class="fa-solid fa-face-smile-beam"></i>';
+                if (app.trackingRefreshInterval) clearInterval(app.trackingRefreshInterval);
+                break;
+        }
     }
 };
 
 // Start
-document.addEventListener('DOMContentLoaded', app.init);
+document.addEventListener('DOMContentLoaded', () => {
+    app.init();
+    app.checkTracking();
+});
