@@ -834,6 +834,66 @@ button {
     color: white;
 }
 
+.operator-codes-section {
+    margin: 2rem 0;
+    text-align: center;
+}
+
+.btn-toggle-codes {
+    background: transparent;
+    border: 1px solid #333;
+    color: #888;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.btn-toggle-codes:hover {
+    border-color: var(--primary);
+    color: white;
+}
+
+.operator-codes {
+    margin-top: 1.5rem;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    padding: 1rem;
+    border: 1px solid #333;
+    text-align: left;
+}
+
+.operator-codes.hidden {
+    display: none;
+}
+
+.operator-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.operator-item:last-child {
+    border-bottom: none;
+}
+
+.operator-name {
+    color: #ccc;
+    font-size: 0.9rem;
+}
+
+.code-snippet {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-family: monospace;
+    color: var(--primary);
+    font-weight: bold;
+}
+
 .main-content header {
     display: flex;
     justify-content: space-between;

@@ -944,6 +944,11 @@ const app = {
         });
     },
 
+    toggleOperatorCodes: () => {
+        const codes = document.getElementById('operator-codes');
+        codes.classList.toggle('hidden');
+    },
+
     loadTracking: async (orderId) => {
         // Use anon key for public tracking (requires RLS policy update or function)
         // Since we don't have public RLS for orders, we might need a function or policy.

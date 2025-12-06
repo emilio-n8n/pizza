@@ -266,6 +266,31 @@
                         </div>
                     </div>
 
+                    <div class="operator-codes-section">
+                        <button class="btn-toggle-codes" onclick="app.toggleOperatorCodes()">
+                            <i class="fa-solid fa-circle-info"></i> Voir les codes de transfert par opérateur
+                        </button>
+                        <div id="operator-codes" class="operator-codes hidden">
+                            <div class="operator-item">
+                                <span class="operator-name">Orange / Sosh</span>
+                                <code class="code-snippet">**21*0189713356#</code>
+                            </div>
+                            <div class="operator-item">
+                                <span class="operator-name">SFR / Red</span>
+                                <code class="code-snippet">*21*0189713356#</code>
+                            </div>
+                            <div class="operator-item">
+                                <span class="operator-name">Bouygues</span>
+                                <code class="code-snippet">*61*0189713356#</code>
+                            </div>
+                            <div class="operator-item">
+                                <span class="operator-name">Free</span>
+                                <code class="code-snippet">*21*0189713356#</code>
+                            </div>
+                            <p class="text-xs text-muted mt-2">Composez ce code sur votre téléphone et appelez.</p>
+                        </div>
+                    </div>
+
                     <button onclick="app.navigateTo('dashboard')" class="btn-primary btn-block btn-lg mt-4">
                         J'ai appelé, accéder au Dashboard <i class="fa-solid fa-arrow-right"></i>
                     </button>
