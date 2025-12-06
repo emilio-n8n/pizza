@@ -953,21 +953,30 @@ const app = {
         // Use anon key for public tracking (requires RLS policy update or function)
         // Since we don't have public RLS for orders, we might need a function or policy.
         // For now, let's try direct select assuming we might need to open it up or use a secure token.
-        // Actually, RLS usually blocks this. We should probably use an edge function or a specific RPC.
-        // BUT, for simplicity in this MVP, let's assume we can fetch if we have the ID (UUID is hard to guess).
         // We will need to add a policy for this: "Anyone can read order if they know the ID" -> Not possible easily with standard RLS without a "secret" column.
         // Let's use the `get_order_status` RPC we can create.
 
         const { data: order, error } = await supabase.rpc('get_order_tracking', { order_id_input: orderId });
 
+        const container = document.getElementById('tracking-card-container'); // We'll update HTML to have this container
+
         if (error || !order || order.length === 0) {
-            document.getElementById('tracking-status-text').innerText = "Commande introuvable";
+            // Show Not Found State
+            document.getElementById('tracking-content').style.display = 'none';
+            document.getElementById('tracking-error').style.display = 'block';
             return;
         }
 
+        // Show Content State
+        document.getElementById('tracking-content').style.display = 'block';
+        document.getElementById('tracking-error').style.display = 'none';
+
         const o = order[0];
         document.getElementById('tracking-order-id').innerText = `Commande #${o.id.slice(0, 8)}`;
-        document.getElementById('tracking-total').innerText = o.total_amount + ' €';
+
+        // Fix for undefined total - check both possible column names
+        const total = o.total_amount !== undefined ? o.total_amount : (o.total !== undefined ? o.total : 0);
+        document.getElementById('tracking-total').innerText = Number(total).toFixed(2) + ' €';
 
         // Items
         const itemsList = document.getElementById('tracking-items');
@@ -980,17 +989,28 @@ const app = {
             `).join('')
             : '';
 
-        // Status
-        const steps = ['new', 'preparing', 'delivering', 'delivered'];
-        const currentStepIndex = steps.indexOf(o.status) === -1 ? 0 : steps.indexOf(o.status);
+        // Status Logic
+        const steps = ['new', 'preparing', 'waiting_delivery', 'delivering', 'delivered'];
+        // Map waiting_delivery to 'preparing' step visually if we only have 4 steps, OR add a step.
+        // Let's keep the UI simple with 4 main visual steps: Reçue -> Préparation -> Livraison -> Terminée
+        // 'waiting_delivery' can be part of 'preparing' or 'delivering' phase visually? 
+        // Let's create a visual mapping.
 
-        // Update steps UI
-        steps.forEach(step => {
+        let visualStepIndex = 0;
+        if (o.status === 'new') visualStepIndex = 0;
+        if (o.status === 'preparing') visualStepIndex = 1;
+        if (o.status === 'waiting_delivery') visualStepIndex = 1; // Still in kitchen/ready
+        if (o.status === 'delivering') visualStepIndex = 2;
+        if (o.status === 'delivered') visualStepIndex = 3;
+
+        const visualSteps = ['new', 'preparing', 'delivering', 'delivered'];
+
+        visualSteps.forEach((step, index) => {
             const el = document.getElementById(`step-${step}`);
             if (el) {
                 el.classList.remove('active', 'completed');
-                if (steps.indexOf(step) < currentStepIndex) el.classList.add('completed');
-                if (steps.indexOf(step) === currentStepIndex) el.classList.add('active');
+                if (index < visualStepIndex) el.classList.add('completed');
+                if (index === visualStepIndex) el.classList.add('active');
             }
         });
 
@@ -1002,7 +1022,7 @@ const app = {
         switch (o.status) {
             case 'new':
                 statusText.innerText = "Commande Reçue";
-                statusDesc.innerText = "La pizzeria a reçu votre commande.";
+                statusDesc.innerText = "La pizzeria a bien reçu votre commande.";
                 icon.innerHTML = '<i class="fa-solid fa-receipt"></i>';
                 break;
             case 'preparing':
@@ -1013,11 +1033,11 @@ const app = {
             case 'waiting_delivery':
                 statusText.innerText = "Prête";
                 statusDesc.innerText = "En attente d'un livreur.";
-                icon.innerHTML = '<i class="fa-solid fa-box"></i>';
+                icon.innerHTML = '<i class="fa-solid fa-box-open"></i>';
                 break;
             case 'delivering':
                 statusText.innerText = "En Livraison";
-                statusDesc.innerText = "Le livreur est en route.";
+                statusDesc.innerText = "Le livreur est en route vers chez vous.";
                 icon.innerHTML = '<i class="fa-solid fa-motorcycle"></i>';
                 break;
             case 'delivered':

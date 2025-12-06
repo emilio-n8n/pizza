@@ -518,49 +518,64 @@
         <!-- 9. Suivi de Commande (Client) -->
         <section id="tracking" class="view">
             <div class="tracking-container">
-                <div class="tracking-card">
-                    <div class="tracking-header">
-                        <h2>Suivi de commande</h2>
-                        <p id="tracking-order-id" class="text-muted">#...</p>
+                <div class="tracking-card" id="tracking-card-container">
+                    
+                    <!-- Content State -->
+                    <div id="tracking-content">
+                        <div class="tracking-header">
+                            <h2><i class="fa-solid fa-pizza-slice text-primary"></i> Suivi de commande</h2>
+                            <p id="tracking-order-id" class="text-muted">#...</p>
+                        </div>
+
+                        <div class="tracking-status">
+                            <div class="status-icon-large" id="tracking-icon">
+                                <i class="fa-solid fa-circle-notch fa-spin"></i>
+                            </div>
+                            <h3 id="tracking-status-text">Chargement...</h3>
+                            <p id="tracking-status-desc" class="text-muted">Veuillez patienter.</p>
+                        </div>
+
+                        <div class="tracking-steps">
+                            <div class="step" id="step-new">
+                                <div class="step-dot"></div>
+                                <div class="step-label">Reçue</div>
+                            </div>
+                            <div class="step" id="step-preparing">
+                                <div class="step-dot"></div>
+                                <div class="step-label">Cuisine</div>
+                            </div>
+                            <div class="step" id="step-delivering">
+                                <div class="step-dot"></div>
+                                <div class="step-label">Route</div>
+                            </div>
+                            <div class="step" id="step-delivered">
+                                <div class="step-dot"></div>
+                                <div class="step-label">Livrée</div>
+                            </div>
+                        </div>
+
+                        <div class="tracking-details">
+                            <h4><i class="fa-solid fa-receipt"></i> Votre commande</h4>
+                            <div id="tracking-items" class="tracking-items-list">
+                                <!-- Items -->
+                            </div>
+                            <div class="tracking-total">
+                                <span>Total</span>
+                                <span id="tracking-total">... €</span>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="tracking-status">
-                        <div class="status-icon-large" id="tracking-icon">
-                            <i class="fa-solid fa-fire-burner"></i>
+                    <!-- Error State -->
+                    <div id="tracking-error" style="display: none; text-align: center; padding: 2rem 0;">
+                        <div style="font-size: 3rem; color: #ff4444; margin-bottom: 1rem;">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
                         </div>
-                        <h3 id="tracking-status-text">En préparation</h3>
-                        <p id="tracking-status-desc">Votre pizza est au four !</p>
+                        <h3>Commande introuvable</h3>
+                        <p class="text-muted mb-4">Le numéro de commande est incorrect ou a expiré.</p>
+                        <button onclick="app.navigateTo('home')" class="btn-secondary">Retour à l'accueil</button>
                     </div>
 
-                    <div class="tracking-steps">
-                        <div class="step completed" id="step-new">
-                            <div class="step-dot"></div>
-                            <div class="step-label">Reçue</div>
-                        </div>
-                        <div class="step" id="step-preparing">
-                            <div class="step-dot"></div>
-                            <div class="step-label">Préparation</div>
-                        </div>
-                        <div class="step" id="step-delivering">
-                            <div class="step-dot"></div>
-                            <div class="step-label">Livraison</div>
-                        </div>
-                        <div class="step" id="step-delivered">
-                            <div class="step-dot"></div>
-                            <div class="step-label">Terminée</div>
-                        </div>
-                    </div>
-
-                    <div class="tracking-details">
-                        <h4>Détails</h4>
-                        <div id="tracking-items" class="tracking-items-list">
-                            <!-- Items -->
-                        </div>
-                        <div class="tracking-total">
-                            <span>Total</span>
-                            <span id="tracking-total">0.00 €</span>
-                        </div>
-                    </div>
                 </div>
             </div>
         </section>
