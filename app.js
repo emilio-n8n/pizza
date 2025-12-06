@@ -60,7 +60,7 @@ const app = {
         window.location.hash = viewId;
 
         const navbar = document.getElementById('navbar');
-        if (['dashboard', 'onboarding', 'admin-dashboard', 'admin-login', 'call-forwarding', 'email-confirm'].includes(viewId)) {
+        if (['dashboard', 'onboarding', 'admin-dashboard', 'admin-login', 'call-forwarding', 'email-confirm', 'tracking'].includes(viewId)) {
             navbar.style.display = 'none';
         } else {
             navbar.style.display = 'flex';
