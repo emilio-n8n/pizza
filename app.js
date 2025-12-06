@@ -936,6 +936,14 @@ const app = {
         }
     },
 
+    copyToClipboard: (text) => {
+        navigator.clipboard.writeText(text).then(() => {
+            alert('Numéro copié !');
+        }).catch(err => {
+            console.error('Erreur copie:', err);
+        });
+    },
+
     loadTracking: async (orderId) => {
         // Use anon key for public tracking (requires RLS policy update or function)
         // Since we don't have public RLS for orders, we might need a function or policy.
