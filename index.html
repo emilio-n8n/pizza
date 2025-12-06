@@ -247,8 +247,9 @@
                     <div class="step-box">
                         <div class="step-number">1</div>
                         <div class="step-content">
-                            <p class="step-title">Appelez ce numéro d'activation</p>
-                            <p class="step-desc">Depuis le téléphone de votre pizzeria.</p>
+                            <p class="step-title">Testez votre agent</p>
+                            <p class="step-desc">Appelez ce numéro pour simuler une commande client et vérifier que tout
+                                fonctionne.</p>
                         </div>
                     </div>
 
@@ -256,21 +257,20 @@
                         <span class="number-text">01 89 71 33 56</span>
                         <button class="btn-copy"><i class="fa-regular fa-copy"></i></button>
                     </div>
-                    <p class="text-center text-muted text-sm mb-4">(Appel non surtaxé)</p>
+                    <p class="text-center text-muted text-sm mb-4">(Numéro de test de votre agent)</p>
 
                     <div class="step-box">
                         <div class="step-number">2</div>
                         <div class="step-content">
-                            <p class="step-title">Votre agent répond</p>
-                            <p class="step-desc">Raccrochez, c'est tout ! Votre ligne est configurée.</p>
+                            <p class="step-title">Activez le transfert d'appel</p>
+                            <p class="step-desc"><strong>Satisfait du test ?</strong> Pour que vos vrais clients tombent
+                                sur l'agent, composez le code ci-dessous depuis le téléphone de la pizzeria.</p>
                         </div>
                     </div>
 
                     <div class="operator-codes-section">
-                        <button class="btn-toggle-codes" onclick="app.toggleOperatorCodes()">
-                            <i class="fa-solid fa-circle-info"></i> Voir les codes de transfert par opérateur
-                        </button>
-                        <div id="operator-codes" class="operator-codes hidden">
+                        <p class="mb-3 text-muted">Choisissez votre opérateur :</p>
+                        <div id="operator-codes" class="operator-codes">
                             <div class="operator-item">
                                 <span class="operator-name">Orange / Sosh</span>
                                 <code class="code-snippet">**21*0189713356#</code>
@@ -287,12 +287,13 @@
                                 <span class="operator-name">Free</span>
                                 <code class="code-snippet">*21*0189713356#</code>
                             </div>
-                            <p class="text-xs text-muted mt-2">Composez ce code sur votre téléphone et appelez.</p>
+                            <p class="text-xs text-muted mt-2">Appuyez sur la touche appel après avoir composé le code.
+                            </p>
                         </div>
                     </div>
 
                     <button onclick="app.navigateTo('dashboard')" class="btn-primary btn-block btn-lg mt-4">
-                        J'ai appelé, accéder au Dashboard <i class="fa-solid fa-arrow-right"></i>
+                        Tout est configuré, accéder au Dashboard <i class="fa-solid fa-arrow-right"></i>
                     </button>
                 </div>
             </div>
