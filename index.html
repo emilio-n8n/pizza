@@ -232,6 +232,54 @@
         <!-- 2b. Configuration Transfert d'Appel -->
         </section>
 
+        <!-- Menu Editor Modal -->
+        <div id="menu-editor-modal" class="modal" style="display: none;">
+            <div class="modal-content menu-editor-content">
+                <div class="modal-header">
+                    <h2><i class="fa-solid fa-wand-magic-sparkles"></i> Vérifiez votre menu</h2>
+                    <p>L'IA a analysé votre menu. Vérifiez et corrigez si nécessaire.</p>
+                </div>
+
+                <div class="menu-editor-body">
+                    <div class="menu-editor-toolbar">
+                        <button onclick="app.addMenuItem()" class="btn-add-item">
+                            <i class="fa-solid fa-plus"></i> Ajouter un produit
+                        </button>
+                        <div class="menu-stats">
+                            <span id="menu-items-count">0 produits</span>
+                        </div>
+                    </div>
+
+                    <div class="menu-items-table-container">
+                        <table class="menu-items-table">
+                            <thead>
+                                <tr>
+                                    <th>Catégorie</th>
+                                    <th>Nom</th>
+                                    <th>Description</th>
+                                    <th>Prix (€)</th>
+                                    <th>Taille</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="menu-items-tbody">
+                                <!-- Items will be inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button onclick="app.cancelMenuEditor()" class="btn-secondary">
+                        Annuler
+                    </button>
+                    <button onclick="app.saveMenuAndContinue()" class="btn-primary">
+                        <i class="fa-solid fa-check"></i> Valider le menu
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- 2b. Configuration Transfert d'Appel -->
         <section id="call-forwarding" class="view">
             <div class="call-forwarding-container">

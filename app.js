@@ -198,6 +198,7 @@ const app = {
         const cuisine = document.getElementById('pizzeriaCuisine').value;
         const user = app.state.session.user;
 
+        // Create pizzeria first
         const { data: pizzeriaData, error } = await supabase
             .from('pizzerias')
             .insert([
@@ -220,8 +221,13 @@ const app = {
             return;
         }
 
-        // Upload menu photo if provided
+        // Store pizzeria ID for later use
+        app.currentPizzeriaId = pizzeriaData.id;
+
+        // Upload and analyze menu photo if provided
         if (app.menuPhotoFile) {
+            submitBtn.innerText = 'Upload du menu...';
+
             const fileName = `${pizzeriaData.id}/${Date.now()}_menu.jpg`;
             const { data: uploadData, error: uploadError } = await supabase.storage
                 .from('menus')
@@ -229,23 +235,55 @@ const app = {
 
             if (uploadError) {
                 console.error('Menu upload error:', uploadError);
-            } else {
-                const { data: { publicUrl } } = supabase.storage
-                    .from('menus')
-                    .getPublicUrl(fileName);
-
-                await supabase
-                    .from('pizzerias')
-                    .update({ menu_photo_url: publicUrl })
-                    .eq('id', pizzeriaData.id);
+                alert('Erreur lors de l\'upload du menu. Vous pourrez l\'ajouter plus tard.');
+                app.navigateTo('confirmation');
+                submitBtn.disabled = false;
+                submitBtn.innerText = originalText;
+                return;
             }
-        }
 
-        if (error) {
-            alert('Erreur lors de la création: ' + error.message);
-            submitBtn.disabled = false;
-            submitBtn.innerText = originalText;
+            const { data: { publicUrl } } = supabase.storage
+                .from('menus')
+                .getPublicUrl(fileName);
+
+            // Update pizzeria with menu URL
+            await supabase
+                .from('pizzerias')
+                .update({ menu_image_url: publicUrl })
+                .eq('id', pizzeriaData.id);
+
+            // Analyze menu with Gemini
+            submitBtn.innerText = 'Analyse du menu par IA...';
+
+            try {
+                const { data: analysisResult, error: analysisError } = await supabase.functions.invoke('analyze-menu', {
+                    body: { imageUrl: publicUrl }
+                });
+
+                if (analysisError) throw analysisError;
+
+                if (analysisResult && analysisResult.items && analysisResult.items.length > 0) {
+                    // Show menu editor with analyzed items
+                    app.tempMenuItems = analysisResult.items;
+                    app.showMenuEditor();
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = originalText;
+                } else {
+                    // No items found, continue without menu
+                    alert('Aucun produit détecté dans le menu. Vous pourrez l\'ajouter manuellement plus tard.');
+                    app.navigateTo('confirmation');
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = originalText;
+                }
+            } catch (analysisError) {
+                console.error('Menu analysis error:', analysisError);
+                alert('Erreur lors de l\'analyse du menu. Vous pourrez l\'ajouter manuellement plus tard.');
+                app.navigateTo('confirmation');
+                submitBtn.disabled = false;
+                submitBtn.innerText = originalText;
+            }
         } else {
+            // No menu photo, continue
             app.navigateTo('confirmation');
             submitBtn.disabled = false;
             submitBtn.innerText = originalText;
@@ -1116,6 +1154,145 @@ const app = {
                 icon.innerHTML = '<i class="fa-solid fa-face-smile-beam"></i>';
                 if (app.trackingRefreshInterval) clearInterval(app.trackingRefreshInterval);
                 break;
+        }
+    },
+
+    // --- Menu Editor Functions ---
+
+    showMenuEditor: () => {
+        const modal = document.getElementById('menu-editor-modal');
+        if (modal) {
+            modal.style.display = 'flex'; // Use flex to center
+            app.renderMenuItemsTable();
+        }
+    },
+
+    renderMenuItemsTable: () => {
+        const tbody = document.getElementById('menu-items-tbody');
+        const countSpan = document.getElementById('menu-items-count');
+
+        if (!tbody) return;
+
+        tbody.innerHTML = '';
+        const items = app.tempMenuItems || [];
+
+        if (countSpan) countSpan.innerText = `${items.length} produits`;
+
+        if (items.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem;">Aucun produit. Ajoutez-en un !</td></tr>';
+            return;
+        }
+
+        items.forEach((item, index) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>
+                    <select onchange="app.updateMenuItem(${index}, 'category', this.value)">
+                        <option value="pizza" ${item.category === 'pizza' ? 'selected' : ''}>Pizza</option>
+                        <option value="boisson" ${item.category === 'boisson' ? 'selected' : ''}>Boisson</option>
+                        <option value="dessert" ${item.category === 'dessert' ? 'selected' : ''}>Dessert</option>
+                        <option value="entree" ${item.category === 'entree' ? 'selected' : ''}>Entrée</option>
+                        <option value="accompagnement" ${item.category === 'accompagnement' ? 'selected' : ''}>Accompagnement</option>
+                        <option value="autre" ${item.category === 'autre' ? 'selected' : ''}>Autre</option>
+                    </select>
+                </td>
+                <td><input type="text" value="${item.name || ''}" onchange="app.updateMenuItem(${index}, 'name', this.value)" placeholder="Nom"></td>
+                <td><input type="text" value="${item.description || ''}" onchange="app.updateMenuItem(${index}, 'description', this.value)" placeholder="Description"></td>
+                <td><input type="number" step="0.01" value="${item.price || 0}" onchange="app.updateMenuItem(${index}, 'price', this.value)" style="width: 80px;"></td>
+                <td>
+                    <select onchange="app.updateMenuItem(${index}, 'size', this.value)" style="width: 100px;">
+                        <option value="" ${!item.size ? 'selected' : ''}>-</option>
+                        <option value="small" ${item.size === 'small' ? 'selected' : ''}>Petite</option>
+                        <option value="medium" ${item.size === 'medium' ? 'selected' : ''}>Moyenne</option>
+                        <option value="large" ${item.size === 'large' ? 'selected' : ''}>Grande</option>
+                    </select>
+                </td>
+                <td>
+                    <button class="btn-icon danger" onclick="app.deleteMenuItem(${index})" title="Supprimer">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    },
+
+    updateMenuItem: (index, field, value) => {
+        if (!app.tempMenuItems) return;
+
+        if (field === 'price') {
+            app.tempMenuItems[index][field] = parseFloat(value);
+        } else if (field === 'size' && value === '') {
+            app.tempMenuItems[index][field] = null;
+        } else {
+            app.tempMenuItems[index][field] = value;
+        }
+    },
+
+    addMenuItem: () => {
+        if (!app.tempMenuItems) app.tempMenuItems = [];
+        app.tempMenuItems.push({
+            category: 'pizza',
+            name: 'Nouveau produit',
+            description: '',
+            price: 10,
+            size: null,
+            available: true,
+            display_order: app.tempMenuItems.length
+        });
+        app.renderMenuItemsTable();
+    },
+
+    deleteMenuItem: (index) => {
+        if (!app.tempMenuItems) return;
+        if (confirm('Supprimer ce produit ?')) {
+            app.tempMenuItems.splice(index, 1);
+            app.renderMenuItemsTable();
+        }
+    },
+
+    cancelMenuEditor: () => {
+        if (confirm('Voulez-vous vraiment annuler ? Le menu ne sera pas enregistré.')) {
+            document.getElementById('menu-editor-modal').style.display = 'none';
+            app.navigateTo('confirmation');
+        }
+    },
+
+    saveMenuAndContinue: async () => {
+        const btn = document.querySelector('#menu-editor-modal .btn-primary');
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sauvegarde...';
+
+        try {
+            const itemsToSave = app.tempMenuItems.map((item, index) => ({
+                pizzeria_id: app.currentPizzeriaId,
+                category: item.category,
+                name: item.name,
+                description: item.description,
+                price: item.price,
+                size: item.size || null,
+                available: true,
+                display_order: index
+            }));
+
+            // Delete existing items (if any, though this is onboarding)
+            // Just in case we are re-running this
+            await supabase.from('menu_items').delete().eq('pizzeria_id', app.currentPizzeriaId);
+
+            // Insert new items
+            const { error } = await supabase.from('menu_items').insert(itemsToSave);
+
+            if (error) throw error;
+
+            document.getElementById('menu-editor-modal').style.display = 'none';
+            app.navigateTo('confirmation');
+
+        } catch (error) {
+            console.error('Error saving menu:', error);
+            alert('Erreur lors de la sauvegarde du menu: ' + error.message);
+            btn.disabled = false;
+            btn.innerHTML = originalText;
         }
     }
 };
