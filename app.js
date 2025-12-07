@@ -831,7 +831,7 @@ const app = {
         }
 
         const list = document.getElementById('driver-orders-list');
-        const activeTab = document.querySelector('.driver-tabs button.active').innerText === 'Disponibles' ? 'available' : 'active';
+        const activeTab = document.querySelector('.driver-tab-btn.active').id === 'tab-btn-available' ? 'available' : 'active';
 
         const filteredOrders = orders.filter(o => {
             if (activeTab === 'available') return o.status === 'waiting_delivery';
@@ -839,59 +839,98 @@ const app = {
         });
 
         if (filteredOrders.length === 0) {
-            list.innerHTML = '<div class="empty-state">Aucune commande.</div>';
+            list.innerHTML = `
+                <div class="empty-state-dark">
+                    <i class="fa-solid fa-box-open" style="font-size: 3rem; color: #444; margin-bottom: 1rem;"></i>
+                    <p>Aucune commande.</p>
+                </div>
+            `;
             return;
         }
 
         list.innerHTML = filteredOrders.map(order => {
-            const itemsText = Array.isArray(order.items)
-                ? order.items.map(item => `${item.quantity || 1}x ${item.name}`).join(', ')
-                : 'Détails non disponibles';
+            const itemsHtml = Array.isArray(order.items)
+                ? order.items.map(item => `
+                    <div class="driver-item">
+                        <span>${item.quantity || 1}x ${item.name}</span>
+                        <span>${((item.price || 0) * (item.quantity || 1)).toFixed(2)} €</span>
+                    </div>
+                `).join('')
+                : '<p style="color: #888;">Détails non disponibles</p>';
 
             const addressLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.delivery_address)}`;
 
             return `
                 <div class="driver-order-card">
                     <div class="driver-order-header">
-                        <span class="order-time">${new Date(order.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
-                        <span class="order-price">${order.total_amount} €</span>
+                        <div>
+                            <div class="driver-order-id">Commande #${order.id.slice(0, 8)}</div>
+                            <div class="driver-order-time">${new Date(order.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
+                        </div>
+                        <span class="order-status-badge status-${order.status}">${order.status === 'waiting_delivery' ? 'Prête' : 'En cours'}</span>
                     </div>
-                    <div class="driver-order-address">
-                        <i class="fa-solid fa-location-dot"></i> ${order.delivery_address}
-                    </div>
-                    <div class="driver-order-items">${itemsText}</div>
                     
-                    <div class="driver-actions-row">
+                    <div class="driver-order-body">
+                        <div class="driver-address">
+                            <i class="fa-solid fa-location-dot"></i>
+                            <div class="driver-address-text">
+                                <div class="driver-address-label">Adresse de livraison</div>
+                                <div class="driver-address-value">${order.delivery_address}</div>
+                            </div>
+                        </div>
+
+                        ${order.customer_phone ? `
+                            <div class="driver-address" style="margin-bottom: 1rem;">
+                                <i class="fa-solid fa-phone"></i>
+                                <div class="driver-address-text">
+                                    <div class="driver-address-label">Contact client</div>
+                                    <div class="driver-address-value">
+                                        <a href="tel:${order.customer_phone}" style="color: var(--primary); text-decoration: none;">
+                                            ${order.customer_phone}
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        <div class="driver-order-items">
+                            <h5><i class="fa-solid fa-pizza-slice"></i> Articles</h5>
+                            ${itemsHtml}
+                        </div>
+
+                        <div class="driver-order-total">
+                            <span>Total</span>
+                            <span>${(order.total_amount || 0).toFixed(2)} €</span>
+                        </div>
+                    </div>
+
+                    <div class="driver-order-actions">
                         ${order.status === 'waiting_delivery' ? `
-                            <button class="btn-primary btn-block" onclick="app.driverTakeOrder('${order.id}')">
-                                Prendre en charge
+                            <button class="btn-take-order" onclick="app.driverTakeOrder('${order.id}')">
+                                <i class="fa-solid fa-hand-holding-box"></i> Prendre en charge
                             </button>
                         ` : `
-                            <a href="${addressLink}" target="_blank" class="btn-secondary btn-block">
-                                <i class="fa-solid fa-diamond-turn-right"></i> GPS
+                            <a href="${addressLink}" target="_blank" class="btn-take-order" style="text-decoration: none; text-align: center;">
+                                <i class="fa-solid fa-diamond-turn-right"></i> Ouvrir GPS
                             </a>
-                            <button class="btn-primary btn-block" onclick="app.driverCompleteOrder('${order.id}')">
-                                <i class="fa-solid fa-check"></i> Livré
+                            <button class="btn-complete-order" onclick="app.driverCompleteOrder('${order.id}')">
+                                <i class="fa-solid fa-check"></i> Marquer comme livrée
                             </button>
                         `}
                     </div>
-                    ${order.customer_phone ? `
-                        <a href="tel:${order.customer_phone}" class="driver-call-btn">
-                            <i class="fa-solid fa-phone"></i> Appeler client
-                        </a>
-                    ` : ''}
                 </div>
             `;
         }).join('');
     },
 
     switchDriverTab: (tab) => {
-        document.querySelectorAll('.driver-tabs button').forEach(b => b.classList.remove('active'));
-        // Find button by text content is tricky, better use index or add IDs. 
-        // Simple fix: assume order
-        const buttons = document.querySelectorAll('.driver-tabs button');
-        if (tab === 'available') buttons[0].classList.add('active');
-        else buttons[1].classList.add('active');
+        document.querySelectorAll('.driver-tab-btn').forEach(b => b.classList.remove('active'));
+
+        if (tab === 'available') {
+            document.getElementById('tab-btn-available').classList.add('active');
+        } else {
+            document.getElementById('tab-btn-active').classList.add('active');
+        }
 
         app.loadDriverOrders();
     },
