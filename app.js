@@ -362,114 +362,68 @@ const app = {
         if (!ordersError) {
             const ordersList = document.getElementById('orders-list') || document.querySelector('.orders-list-dark');
             if (ordersList) {
-                // Determine active tab
+                // Determine active tab status
                 const activeTabBtn = document.querySelector('.pizzeria-tab-btn.active');
-                const activeTab = activeTabBtn && activeTabBtn.id === 'tab-btn-completed-orders' ? 'completed' : 'active';
+                const activeStatus = activeTabBtn ? activeTabBtn.id.replace('tab-btn-', '') : 'new';
 
-                // Filter orders based on tab
+                // Filter orders by active status
                 const filteredOrders = orders && orders.filter(order => {
                     const status = order.status || 'new';
-                    if (activeTab === 'completed') {
-                        return status === 'delivered' || status === 'done';
-                    } else {
-                        return status !== 'delivered' && status !== 'done';
-                    }
+                    return status === activeStatus;
                 });
 
                 if (filteredOrders && filteredOrders.length > 0) {
-                    // Group orders by status
-                    const statusGroups = {
-                        new: { label: 'Nouvelles commandes', icon: 'fa-bell', color: '#FF9800', orders: [] },
-                        preparing: { label: 'En préparation', icon: 'fa-fire-burner', color: '#2196F3', orders: [] },
-                        ready: { label: 'Prêtes (retrait)', icon: 'fa-check-circle', color: '#4CAF50', orders: [] },
-                        waiting_delivery: { label: 'En attente de livreur', icon: 'fa-clock', color: '#FFC107', orders: [] },
-                        delivering: { label: 'En cours de livraison', icon: 'fa-motorcycle', color: '#9C27B0', orders: [] },
-                        delivered: { label: 'Livrées', icon: 'fa-circle-check', color: '#9E9E9E', orders: [] }
-                    };
+                    ordersList.innerHTML = filteredOrders.map(order => {
+                        const timeAgo = new Date(order.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                        const itemsText = Array.isArray(order.items)
+                            ? order.items.map(item => `${item.quantity || 1}x ${item.name}`).join(', ')
+                            : 'Détails non disponibles';
 
-                    // Group orders
-                    filteredOrders.forEach(order => {
+                        let actionButtons = '';
+                        const isDelivery = !!order.delivery_address;
                         const status = order.status || 'new';
-                        if (statusGroups[status]) {
-                            statusGroups[status].orders.push(order);
-                        }
-                    });
 
-                    // Render sections
-                    let html = '';
-                    Object.keys(statusGroups).forEach(statusKey => {
-                        const group = statusGroups[statusKey];
-                        if (group.orders.length > 0) {
-                            html += `
-                                <div class="orders-status-section">
-                                    <div class="status-section-header" style="border-left-color: ${group.color};">
-                                        <i class="fa-solid ${group.icon}" style="color: ${group.color};"></i>
-                                        <span>${group.label}</span>
-                                        <span class="status-count">${group.orders.length}</span>
-                                    </div>
-                                    <div class="status-section-orders">
-                            `;
-
-                            group.orders.forEach(order => {
-                                const timeAgo = new Date(order.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-                                const itemsText = Array.isArray(order.items)
-                                    ? order.items.map(item => `${item.quantity || 1}x ${item.name}`).join(', ')
-                                    : 'Détails non disponibles';
-
-                                let actionButtons = '';
-                                const isDelivery = !!order.delivery_address;
-                                const status = order.status || 'new';
-
-                                switch (status) {
-                                    case 'preparing':
-                                        if (isDelivery) {
-                                            actionButtons = `<button class="btn-validate" onclick="app.updateOrderStatus('${order.id}', 'waiting_delivery')">Prête (Livreur)</button>`;
-                                        } else {
-                                            actionButtons = `<button class="btn-validate" onclick="app.updateOrderStatus('${order.id}', 'ready')">Prête (Retrait)</button>`;
-                                        }
-                                        break;
-                                    case 'ready':
-                                        actionButtons = `<button class="btn-validate" onclick="app.updateOrderStatus('${order.id}', 'delivered')">Terminer</button>`;
-                                        break;
-                                    case 'waiting_delivery':
-                                        actionButtons = `<button class="btn-validate" onclick="app.updateOrderStatus('${order.id}', 'delivering')">Partie</button>`;
-                                        break;
-                                    case 'delivering':
-                                        actionButtons = `<button class="btn-validate" onclick="app.updateOrderStatus('${order.id}', 'delivered')">Livrée</button>`;
-                                        break;
-                                    case 'delivered':
-                                    case 'done':
-                                        actionButtons = '';
-                                        break;
-                                    default: // new
-                                        actionButtons = `<button class="btn-validate" onclick="app.updateOrderStatus('${order.id}', 'preparing')">Valider</button>`;
+                        switch (status) {
+                            case 'preparing':
+                                if (isDelivery) {
+                                    actionButtons = `<button class="btn-validate" onclick="app.updateOrderStatus('${order.id}', 'waiting_delivery')">Prête (Livreur)</button>`;
+                                } else {
+                                    actionButtons = `<button class="btn-validate" onclick="app.updateOrderStatus('${order.id}', 'ready')">Prête (Retrait)</button>`;
                                 }
+                                break;
+                            case 'ready':
+                                actionButtons = `<button class="btn-validate" onclick="app.updateOrderStatus('${order.id}', 'delivered')">Terminer</button>`;
+                                break;
+                            case 'waiting_delivery':
+                                actionButtons = `<button class="btn-validate" onclick="app.updateOrderStatus('${order.id}', 'delivering')">Partie</button>`;
+                                break;
+                            case 'delivering':
+                                actionButtons = `<button class="btn-validate" onclick="app.updateOrderStatus('${order.id}', 'delivered')">Livrée</button>`;
+                                break;
+                            case 'delivered':
+                            case 'done':
+                                actionButtons = '';
+                                break;
+                            default: // new
+                                actionButtons = `<button class="btn-validate" onclick="app.updateOrderStatus('${order.id}', 'preparing')">Valider</button>`;
+                        }
 
-                                html += `
-                                    <div class="order-card-dark">
-                                        <div>
-                                            <div class="order-time">${timeAgo}</div>
-                                            <div class="order-items">${itemsText}</div>
-                                            <div class="order-details">
-                                                ${order.delivery_address ? `<div><i class="fa-solid fa-location-dot"></i>${order.delivery_address}</div>` : ''}
-                                                ${order.customer_phone ? `<div><i class="fa-solid fa-phone"></i>${order.customer_phone}</div>` : ''}
-                                            </div>
-                                        </div>
-                                        <div class="order-actions">
-                                            ${actionButtons}
-                                        </div>
-                                    </div>
-                                `;
-                            });
-
-                            html += `
+                        return `
+                            <div class="order-card-dark">
+                                <div>
+                                    <div class="order-time">${timeAgo}</div>
+                                    <div class="order-items">${itemsText}</div>
+                                    <div class="order-details">
+                                        ${order.delivery_address ? `<div><i class="fa-solid fa-location-dot"></i>${order.delivery_address}</div>` : ''}
+                                        ${order.customer_phone ? `<div><i class="fa-solid fa-phone"></i>${order.customer_phone}</div>` : ''}
                                     </div>
                                 </div>
-                            `;
-                        }
-                    });
-
-                    ordersList.innerHTML = html;
+                                <div class="order-actions">
+                                    ${actionButtons}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
                 } else {
                     ordersList.innerHTML = '<div class="empty-state">Aucune commande pour le moment.</div>';
                 }
@@ -490,15 +444,9 @@ const app = {
         }
     },
 
-    switchPizzeriaOrdersTab: (tab) => {
+    switchPizzeriaOrdersTab: (status) => {
         document.querySelectorAll('.pizzeria-tab-btn').forEach(b => b.classList.remove('active'));
-
-        if (tab === 'active') {
-            document.getElementById('tab-btn-active-orders').classList.add('active');
-        } else {
-            document.getElementById('tab-btn-completed-orders').classList.add('active');
-        }
-
+        document.getElementById(`tab-btn-${status}`).classList.add('active');
         app.loadDashboard(true);
     },
 

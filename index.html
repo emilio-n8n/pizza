@@ -469,13 +469,29 @@
                         </div>
 
                         <div class="pizzeria-tabs-dark">
-                            <button class="pizzeria-tab-btn active" id="tab-btn-active-orders"
-                                onclick="app.switchPizzeriaOrdersTab('active')">
-                                <i class="fa-solid fa-fire"></i> En cours
+                            <button class="pizzeria-tab-btn active" id="tab-btn-new"
+                                onclick="app.switchPizzeriaOrdersTab('new')">
+                                <i class="fa-solid fa-bell"></i> Nouvelles
                             </button>
-                            <button class="pizzeria-tab-btn" id="tab-btn-completed-orders"
-                                onclick="app.switchPizzeriaOrdersTab('completed')">
-                                <i class="fa-solid fa-check-circle"></i> Terminées
+                            <button class="pizzeria-tab-btn" id="tab-btn-preparing"
+                                onclick="app.switchPizzeriaOrdersTab('preparing')">
+                                <i class="fa-solid fa-fire-burner"></i> En préparation
+                            </button>
+                            <button class="pizzeria-tab-btn" id="tab-btn-ready"
+                                onclick="app.switchPizzeriaOrdersTab('ready')">
+                                <i class="fa-solid fa-check-circle"></i> Prêtes
+                            </button>
+                            <button class="pizzeria-tab-btn" id="tab-btn-waiting_delivery"
+                                onclick="app.switchPizzeriaOrdersTab('waiting_delivery')">
+                                <i class="fa-solid fa-clock"></i> Attente livreur
+                            </button>
+                            <button class="pizzeria-tab-btn" id="tab-btn-delivering"
+                                onclick="app.switchPizzeriaOrdersTab('delivering')">
+                                <i class="fa-solid fa-motorcycle"></i> En livraison
+                            </button>
+                            <button class="pizzeria-tab-btn" id="tab-btn-delivered"
+                                onclick="app.switchPizzeriaOrdersTab('delivered')">
+                                <i class="fa-solid fa-circle-check"></i> Terminées
                             </button>
                         </div>
 
