@@ -483,6 +483,35 @@
                             </div>
                         </div>
                     </div>
+
+                    <div id="tab-settings" class="dashboard-tab" style="display: none;">
+                        <div class="settings-container">
+                            <h3 class="mb-4"><i class="fa-solid fa-users"></i> Gestion des Livreurs</h3>
+                            
+                            <div class="settings-card dark-card mb-4">
+                                <h4>Inviter un livreur</h4>
+                                <p class="text-muted text-sm mb-3">Créez un lien d'accès unique pour vos livreurs.</p>
+                                <form onsubmit="app.inviteDriver(event)" class="driver-invite-form">
+                                    <div class="input-group">
+                                        <input type="text" id="driver-name-input" placeholder="Prénom du livreur" required class="dark-input">
+                                    </div>
+                                    <div class="input-group">
+                                        <input type="tel" id="driver-phone-input" placeholder="Téléphone (optionnel)" class="dark-input">
+                                    </div>
+                                    <button type="submit" class="btn-primary mt-2">
+                                        <i class="fa-solid fa-plus"></i> Créer l'accès
+                                    </button>
+                                </form>
+                            </div>
+
+                            <div class="settings-card dark-card">
+                                <h4>Livreurs actifs</h4>
+                                <div id="drivers-list" class="drivers-list-container">
+                                    <div class="empty-state text-sm">Chargement...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
