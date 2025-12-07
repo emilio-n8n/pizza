@@ -2310,6 +2310,30 @@ button {
     box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
 }
 
+.btn-gps-dark {
+    background: #2196F3;
+    color: white;
+    flex: 1;
+    padding: 0.875rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    font-size: 1rem;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.btn-gps-dark:hover {
+    background: #1976D2;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+}
+
 .btn-complete-order {
     background: #4CAF50;
     color: white;

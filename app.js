@@ -849,6 +849,7 @@ const app = {
         }
 
         list.innerHTML = filteredOrders.map(order => {
+
             const itemsHtml = Array.isArray(order.items)
                 ? order.items.map(item => `
                     <div class="driver-item">
@@ -858,7 +859,16 @@ const app = {
                 `).join('')
                 : '<p style="color: #888;">Détails non disponibles</p>';
 
-            const addressLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.delivery_address)}`;
+            // Calculate total from items if total_amount is missing
+            const calculatedTotal = Array.isArray(order.items)
+                ? order.items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0)
+                : 0;
+            const totalAmount = order.total_amount || order.total || calculatedTotal;
+
+            // Use geo: protocol for native navigation apps, fallback to Google Maps
+            const addressEncoded = encodeURIComponent(order.delivery_address);
+            const gpsLink = `geo:0,0?q=${addressEncoded}`;
+            const fallbackLink = `https://www.google.com/maps/search/?api=1&query=${addressEncoded}`;
 
             return `
                 <div class="driver-order-card">
@@ -900,7 +910,7 @@ const app = {
 
                         <div class="driver-order-total">
                             <span>Total</span>
-                            <span>${(order.total_amount || 0).toFixed(2)} €</span>
+                            <span>${totalAmount.toFixed(2)} €</span>
                         </div>
                     </div>
 
@@ -910,8 +920,8 @@ const app = {
                                 <i class="fa-solid fa-hand-holding-box"></i> Prendre en charge
                             </button>
                         ` : `
-                            <a href="${addressLink}" target="_blank" class="btn-take-order" style="text-decoration: none; text-align: center;">
-                                <i class="fa-solid fa-diamond-turn-right"></i> Ouvrir GPS
+                            <a href="${gpsLink}" onclick="setTimeout(() => window.open('${fallbackLink}', '_blank'), 500)" class="btn-gps-dark">
+                                <i class="fa-solid fa-location-arrow"></i> Ouvrir GPS
                             </a>
                             <button class="btn-complete-order" onclick="app.driverCompleteOrder('${order.id}')">
                                 <i class="fa-solid fa-check"></i> Marquer comme livrée
