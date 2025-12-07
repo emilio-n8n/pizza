@@ -377,65 +377,99 @@ const app = {
                 });
 
                 if (filteredOrders && filteredOrders.length > 0) {
-                    ordersList.innerHTML = filteredOrders.map(order => {
-                        const timeAgo = new Date(order.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-                        const itemsText = Array.isArray(order.items)
-                            ? order.items.map(item => `${item.quantity || 1}x ${item.name}`).join(', ')
-                            : 'Détails non disponibles';
+                    // Group orders by status
+                    const statusGroups = {
+                        new: { label: 'Nouvelles commandes', icon: 'fa-bell', color: '#FF9800', orders: [] },
+                        preparing: { label: 'En préparation', icon: 'fa-fire-burner', color: '#2196F3', orders: [] },
+                        ready: { label: 'Prêtes (retrait)', icon: 'fa-check-circle', color: '#4CAF50', orders: [] },
+                        waiting_delivery: { label: 'En attente de livreur', icon: 'fa-clock', color: '#FFC107', orders: [] },
+                        delivering: { label: 'En cours de livraison', icon: 'fa-motorcycle', color: '#9C27B0', orders: [] },
+                        delivered: { label: 'Livrées', icon: 'fa-circle-check', color: '#9E9E9E', orders: [] }
+                    };
 
-                        let statusBadge = '';
-                        let actionButtons = '';
-                        const isDelivery = !!order.delivery_address;
+                    // Group orders
+                    filteredOrders.forEach(order => {
                         const status = order.status || 'new';
-
-                        switch (status) {
-                            case 'preparing':
-                                statusBadge = '<div class="order-status-badge preparing">En préparation</div>';
-                                if (isDelivery) {
-                                    actionButtons = `<button class="btn-validate" onclick="app.updateOrderStatus('${order.id}', 'waiting_delivery')">Prête (Livreur)</button>`;
-                                } else {
-                                    actionButtons = `<button class="btn-validate" onclick="app.updateOrderStatus('${order.id}', 'ready')">Prête (Retrait)</button>`;
-                                }
-                                break;
-                            case 'ready':
-                                statusBadge = '<div class="order-status-badge ready">Prête (Retrait)</div>';
-                                actionButtons = `<button class="btn-validate" onclick="app.updateOrderStatus('${order.id}', 'delivered')">Terminer</button>`;
-                                break;
-                            case 'waiting_delivery':
-                                statusBadge = '<div class="order-status-badge waiting_delivery">Attente Livreur</div>';
-                                actionButtons = `<button class="btn-validate" onclick="app.updateOrderStatus('${order.id}', 'delivering')">Partie</button>`;
-                                break;
-                            case 'delivering':
-                                statusBadge = '<div class="order-status-badge delivering">En Livraison</div>';
-                                actionButtons = `<button class="btn-validate" onclick="app.updateOrderStatus('${order.id}', 'delivered')">Livrée</button>`;
-                                break;
-                            case 'delivered':
-                            case 'done':
-                                statusBadge = '<div class="order-status-badge delivered">Terminée</div>';
-                                actionButtons = '';
-                                break;
-                            default: // new
-                                statusBadge = '<div class="order-status-badge new">Nouvelle</div>';
-                                actionButtons = `<button class="btn-validate" onclick="app.updateOrderStatus('${order.id}', 'preparing')">Valider</button>`;
+                        if (statusGroups[status]) {
+                            statusGroups[status].orders.push(order);
                         }
+                    });
 
-                        return `
-                            <div class="order-card-dark">
-                                <div>
-                                    <div class="order-time">${timeAgo}</div>
-                                    ${statusBadge}
-                                    <div class="order-items">${itemsText}</div>
-                                    <div class="order-details">
-                                        ${order.delivery_address ? `<div><i class="fa-solid fa-location-dot"></i>${order.delivery_address}</div>` : ''}
-                                        ${order.customer_phone ? `<div><i class="fa-solid fa-phone"></i>${order.customer_phone}</div>` : ''}
+                    // Render sections
+                    let html = '';
+                    Object.keys(statusGroups).forEach(statusKey => {
+                        const group = statusGroups[statusKey];
+                        if (group.orders.length > 0) {
+                            html += `
+                                <div class="orders-status-section">
+                                    <div class="status-section-header" style="border-left-color: ${group.color};">
+                                        <i class="fa-solid ${group.icon}" style="color: ${group.color};"></i>
+                                        <span>${group.label}</span>
+                                        <span class="status-count">${group.orders.length}</span>
+                                    </div>
+                                    <div class="status-section-orders">
+                            `;
+
+                            group.orders.forEach(order => {
+                                const timeAgo = new Date(order.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                                const itemsText = Array.isArray(order.items)
+                                    ? order.items.map(item => `${item.quantity || 1}x ${item.name}`).join(', ')
+                                    : 'Détails non disponibles';
+
+                                let actionButtons = '';
+                                const isDelivery = !!order.delivery_address;
+                                const status = order.status || 'new';
+
+                                switch (status) {
+                                    case 'preparing':
+                                        if (isDelivery) {
+                                            actionButtons = `<button class="btn-validate" onclick="app.updateOrderStatus('${order.id}', 'waiting_delivery')">Prête (Livreur)</button>`;
+                                        } else {
+                                            actionButtons = `<button class="btn-validate" onclick="app.updateOrderStatus('${order.id}', 'ready')">Prête (Retrait)</button>`;
+                                        }
+                                        break;
+                                    case 'ready':
+                                        actionButtons = `<button class="btn-validate" onclick="app.updateOrderStatus('${order.id}', 'delivered')">Terminer</button>`;
+                                        break;
+                                    case 'waiting_delivery':
+                                        actionButtons = `<button class="btn-validate" onclick="app.updateOrderStatus('${order.id}', 'delivering')">Partie</button>`;
+                                        break;
+                                    case 'delivering':
+                                        actionButtons = `<button class="btn-validate" onclick="app.updateOrderStatus('${order.id}', 'delivered')">Livrée</button>`;
+                                        break;
+                                    case 'delivered':
+                                    case 'done':
+                                        actionButtons = '';
+                                        break;
+                                    default: // new
+                                        actionButtons = `<button class="btn-validate" onclick="app.updateOrderStatus('${order.id}', 'preparing')">Valider</button>`;
+                                }
+
+                                html += `
+                                    <div class="order-card-dark">
+                                        <div>
+                                            <div class="order-time">${timeAgo}</div>
+                                            <div class="order-items">${itemsText}</div>
+                                            <div class="order-details">
+                                                ${order.delivery_address ? `<div><i class="fa-solid fa-location-dot"></i>${order.delivery_address}</div>` : ''}
+                                                ${order.customer_phone ? `<div><i class="fa-solid fa-phone"></i>${order.customer_phone}</div>` : ''}
+                                            </div>
+                                        </div>
+                                        <div class="order-actions">
+                                            ${actionButtons}
+                                        </div>
+                                    </div>
+                                `;
+                            });
+
+                            html += `
                                     </div>
                                 </div>
-                                <div class="order-actions">
-                                    ${actionButtons}
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
+                            `;
+                        }
+                    });
+
+                    ordersList.innerHTML = html;
                 } else {
                     ordersList.innerHTML = '<div class="empty-state">Aucune commande pour le moment.</div>';
                 }
