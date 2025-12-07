@@ -297,6 +297,11 @@ const app = {
         document.querySelectorAll('.menu li').forEach(el => el.classList.remove('active'));
         const menu = document.getElementById(`menu-${tabName}`);
         if (menu) menu.classList.add('active');
+
+        // Load drivers list when opening settings tab
+        if (tabName === 'settings') {
+            app.loadDriversList();
+        }
     },
 
     loadDashboard: async (isRefresh = false) => {
