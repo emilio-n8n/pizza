@@ -487,16 +487,18 @@
                     <div id="tab-settings" class="dashboard-tab" style="display: none;">
                         <div class="settings-container">
                             <h3 class="mb-4"><i class="fa-solid fa-users"></i> Gestion des Livreurs</h3>
-                            
+
                             <div class="settings-card dark-card mb-4">
                                 <h4>Inviter un livreur</h4>
                                 <p class="text-muted text-sm mb-3">Créez un lien d'accès unique pour vos livreurs.</p>
                                 <form onsubmit="app.inviteDriver(event)" class="driver-invite-form">
                                     <div class="input-group">
-                                        <input type="text" id="driver-name-input" placeholder="Prénom du livreur" required class="dark-input">
+                                        <input type="text" id="driver-name-input" placeholder="Prénom du livreur"
+                                            required class="dark-input">
                                     </div>
                                     <div class="input-group">
-                                        <input type="tel" id="driver-phone-input" placeholder="Téléphone (optionnel)" class="dark-input">
+                                        <input type="tel" id="driver-phone-input" placeholder="Téléphone (optionnel)"
+                                            class="dark-input">
                                     </div>
                                     <button type="submit" class="btn-primary mt-2">
                                         <i class="fa-solid fa-plus"></i> Créer l'accès
@@ -518,28 +520,43 @@
 
         <!-- 8. Dashboard Livreur -->
         <section id="driver-dashboard" class="view">
-            <div class="driver-layout">
-                <header class="driver-header">
+            <div class="driver-layout-dark">
+                <header class="driver-header-dark">
                     <div class="driver-info">
-                        <div class="driver-avatar"><i class="fa-solid fa-helmet-safety"></i></div>
+                        <div class="driver-avatar-dark">
+                            <i class="fa-solid fa-motorcycle"></i>
+                        </div>
                         <div>
-                            <h3 id="driver-name">Livreur</h3>
-                            <span class="status-badge-green">En ligne</span>
+                            <h3 id="driver-name" style="color: white; margin: 0;">Livreur</h3>
+                            <span class="status-badge-green">
+                                <i class="fa-solid fa-circle"></i> En ligne
+                            </span>
                         </div>
                     </div>
-                    <button onclick="app.logoutDriver()" class="btn-small btn-secondary">
-                        <i class="fa-solid fa-right-from-bracket"></i>
+                    <button onclick="app.logoutDriver()" class="btn-logout-dark">
+                        <i class="fa-solid fa-right-from-bracket"></i> Déconnexion
                     </button>
                 </header>
 
-                <div class="driver-tabs">
-                    <button class="active" onclick="app.switchDriverTab('available')">Disponibles</button>
-                    <button onclick="app.switchDriverTab('active')">En cours</button>
+                <div class="driver-tabs-dark">
+                    <button class="driver-tab-btn active" id="tab-btn-available"
+                        onclick="app.switchDriverTab('available')">
+                        <i class="fa-solid fa-clock"></i> Disponibles
+                    </button>
+                    <button class="driver-tab-btn" id="tab-btn-active" onclick="app.switchDriverTab('active')">
+                        <i class="fa-solid fa-route"></i> En cours
+                    </button>
                 </div>
 
-                <div id="driver-orders-list" class="driver-orders-list">
-                    <!-- Populated by JS -->
-                    <div class="empty-state">Chargement...</div>
+                <div class="driver-content-dark">
+                    <div id="driver-orders-list" class="driver-orders-list-dark">
+                        <!-- Populated by JS -->
+                        <div class="empty-state-dark">
+                            <i class="fa-solid fa-box-open"
+                                style="font-size: 3rem; color: #444; margin-bottom: 1rem;"></i>
+                            <p>Chargement...</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -548,7 +565,7 @@
         <section id="tracking" class="view">
             <div class="tracking-container">
                 <div class="tracking-card" id="tracking-card-container">
-                    
+
                     <!-- Content State -->
                     <div id="tracking-content">
                         <div class="tracking-header">
