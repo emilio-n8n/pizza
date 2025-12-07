@@ -2375,3 +2375,39 @@ button {
         display: none;
     }
 }
+
+/* Pizzeria Dashboard Tabs */
+.pizzeria-tabs-dark {
+    background: #1a1a1a;
+    padding: 0 2rem;
+    display: flex;
+    gap: 1rem;
+    border-bottom: 1px solid #333;
+    margin-bottom: 2rem;
+}
+
+.pizzeria-tab-btn {
+    background: transparent;
+    border: none;
+    color: #888;
+    padding: 1rem 1.5rem;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pizzeria-tab-btn:hover {
+    color: white;
+}
+
+.pizzeria-tab-btn.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+
+```

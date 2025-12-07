@@ -468,6 +468,17 @@
                             </div>
                         </div>
 
+                        <div class="pizzeria-tabs-dark">
+                            <button class="pizzeria-tab-btn active" id="tab-btn-active-orders"
+                                onclick="app.switchPizzeriaOrdersTab('active')">
+                                <i class="fa-solid fa-fire"></i> En cours
+                            </button>
+                            <button class="pizzeria-tab-btn" id="tab-btn-completed-orders"
+                                onclick="app.switchPizzeriaOrdersTab('completed')">
+                                <i class="fa-solid fa-check-circle"></i> Terminées
+                            </button>
+                        </div>
+
                         <div class="orders-list-dark" id="orders-list">
                             <div class="empty-state">Chargement des commandes...</div>
                         </div>

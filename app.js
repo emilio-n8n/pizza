@@ -362,8 +362,22 @@ const app = {
         if (!ordersError) {
             const ordersList = document.getElementById('orders-list') || document.querySelector('.orders-list-dark');
             if (ordersList) {
-                if (orders && orders.length > 0) {
-                    ordersList.innerHTML = orders.map(order => {
+                // Determine active tab
+                const activeTabBtn = document.querySelector('.pizzeria-tab-btn.active');
+                const activeTab = activeTabBtn && activeTabBtn.id === 'tab-btn-completed-orders' ? 'completed' : 'active';
+
+                // Filter orders based on tab
+                const filteredOrders = orders && orders.filter(order => {
+                    const status = order.status || 'new';
+                    if (activeTab === 'completed') {
+                        return status === 'delivered' || status === 'done';
+                    } else {
+                        return status !== 'delivered' && status !== 'done';
+                    }
+                });
+
+                if (filteredOrders && filteredOrders.length > 0) {
+                    ordersList.innerHTML = filteredOrders.map(order => {
                         const timeAgo = new Date(order.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
                         const itemsText = Array.isArray(order.items)
                             ? order.items.map(item => `${item.quantity || 1}x ${item.name}`).join(', ')
@@ -440,6 +454,18 @@ const app = {
         } else {
             alert('Erreur lors de la mise à jour');
         }
+    },
+
+    switchPizzeriaOrdersTab: (tab) => {
+        document.querySelectorAll('.pizzeria-tab-btn').forEach(b => b.classList.remove('active'));
+
+        if (tab === 'active') {
+            document.getElementById('tab-btn-active-orders').classList.add('active');
+        } else {
+            document.getElementById('tab-btn-completed-orders').classList.add('active');
+        }
+
+        app.loadDashboard(true);
     },
 
     currentPizzeriaDetail: null,
