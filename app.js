@@ -686,8 +686,10 @@ const app = {
 
     inviteDriver: async (e) => {
         e.preventDefault();
-        const nameInput = document.getElementById('newDriverName');
+        const nameInput = document.getElementById('driver-name-input');
+        const phoneInput = document.getElementById('driver-phone-input');
         const name = nameInput.value;
+        const phone = phoneInput.value;
         const user = app.state.session?.user;
 
         // Get pizzeria ID
@@ -703,7 +705,8 @@ const app = {
             .from('delivery_drivers')
             .insert([{
                 pizzeria_id: pizzeria.id,
-                name: name
+                name: name,
+                phone: phone || null
             }])
             .select()
             .single();
@@ -712,8 +715,13 @@ const app = {
             alert('Erreur: ' + error.message);
         } else {
             nameInput.value = '';
+            phoneInput.value = '';
             app.loadDriversList(pizzeria.id);
-            alert(`Livreur créé ! Lien d'accès : ${window.location.origin}/#driver-login?token=${data.access_token}`);
+
+            // Show link with copy button
+            const link = `${window.location.origin}/#driver-login?token=${data.access_token}`;
+            const message = `Livreur créé !\n\nLien d'accès :\n${link}\n\nPartagez ce lien avec ${name}.`;
+            alert(message);
         }
     },
 
