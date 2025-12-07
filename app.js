@@ -340,6 +340,182 @@ const app = {
         if (tabName === 'settings') {
             app.loadDriversList();
         }
+
+        // Load menu when opening menu tab
+        if (tabName === 'menu') {
+            app.loadMenuManagement();
+        }
+    },
+
+    // --- Menu Management (Settings) Functions ---
+
+    loadMenuManagement: async () => {
+        const list = document.getElementById('menu-management-list');
+        if (!list) return;
+
+        list.innerHTML = '<div class="empty-state">Chargement du menu...</div>';
+
+        let pizzeriaId = app.currentPizzeriaId;
+        if (!pizzeriaId) {
+            const user = app.state.session?.user;
+            if (user) {
+                const { data } = await supabase.from('pizzerias').select('id').eq('user_id', user.id).single();
+                pizzeriaId = data?.id;
+                app.currentPizzeriaId = pizzeriaId;
+            }
+        }
+
+        if (!pizzeriaId) {
+            list.innerHTML = '<div class="error-state">Erreur: Pizzeria non trouvée.</div>';
+            return;
+        }
+
+        const { data: menuItems, error } = await supabase
+            .from('menu_items')
+            .select('*')
+            .eq('pizzeria_id', pizzeriaId)
+            .order('display_order', { ascending: true });
+
+        if (error) {
+            console.error('Error loading menu:', error);
+            list.innerHTML = `<div class="error-state">Erreur lors du chargement du menu: ${error.message}</div>`;
+            return;
+        }
+
+        app.menuItemsCache = menuItems || [];
+        app.activeMenuCategory = 'all';
+        app.renderMenuManagementList();
+    },
+
+    filterMenuCategory: (category) => {
+        app.activeMenuCategory = category;
+
+        // Update tabs styling
+        document.querySelectorAll('.category-tab').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.innerText.toLowerCase().includes(category === 'all' ? 'tout' : category)) {
+                // Approximate matching or logic based on onclick attr parsing could be brittle, 
+                // simpler to assume onclick logic sets class.
+                // Re-selecting by onclick attribute content is robust enough here.
+                if (btn.getAttribute('onclick').includes(`'${category}'`)) {
+                    btn.classList.add('active');
+                }
+            }
+        });
+
+        app.renderMenuManagementList();
+    },
+
+    renderMenuManagementList: () => {
+        const list = document.getElementById('menu-management-list');
+        if (!list) return;
+
+        const category = app.activeMenuCategory || 'all';
+        let items = app.menuItemsCache || [];
+
+        if (category !== 'all') {
+            items = items.filter(item => item.category === category);
+        }
+
+        if (items.length === 0) {
+            list.innerHTML = '<div class="empty-state">Aucun produit dans cette catégorie.</div>';
+            return;
+        }
+
+        list.innerHTML = items.map(item => `
+            <div class="menu-item-row-card">
+                <div class="menu-item-details">
+                    <div class="item-header">
+                        <span class="item-name" contenteditable="true" onblur="app.updateMenuItemInDB('${item.id}', 'name', this.innerText)">${item.name}</span>
+                        <span class="item-price">
+                            <input type="number" step="0.01" value="${item.price}" onchange="app.updateMenuItemInDB('${item.id}', 'price', this.value)"> €
+                        </span>
+                    </div>
+                    <div class="item-desc" contenteditable="true" onblur="app.updateMenuItemInDB('${item.id}', 'description', this.innerText)">${item.description || 'Ajouter une description...'}</div>
+                    <div class="item-meta">
+                        <select onchange="app.updateMenuItemInDB('${item.id}', 'category', this.value)" class="small-select">
+                            <option value="pizza" ${item.category === 'pizza' ? 'selected' : ''}>Pizza</option>
+                            <option value="boisson" ${item.category === 'boisson' ? 'selected' : ''}>Boisson</option>
+                            <option value="dessert" ${item.category === 'dessert' ? 'selected' : ''}>Dessert</option>
+                            <option value="entree" ${item.category === 'entree' ? 'selected' : ''}>Entrée</option>
+                            <option value="accompagnement" ${item.category === 'accompagnement' ? 'selected' : ''}>Accompagnement</option>
+                            <option value="autre" ${item.category === 'autre' ? 'selected' : ''}>Autre</option>
+                        </select>
+                        ${item.category === 'pizza' ? `
+                            <select onchange="app.updateMenuItemInDB('${item.id}', 'size', this.value)" class="small-select">
+                                <option value="" ${!item.size ? 'selected' : ''}>Taille: -</option>
+                                <option value="small" ${item.size === 'small' ? 'selected' : ''}>Petite</option>
+                                <option value="medium" ${item.size === 'medium' ? 'selected' : ''}>Moyenne</option>
+                                <option value="large" ${item.size === 'large' ? 'selected' : ''}>Grande</option>
+                            </select>
+                        ` : ''}
+                        <label class="toggle-switch">
+                            <input type="checkbox" ${item.available ? 'checked' : ''} onchange="app.updateMenuItemInDB('${item.id}', 'available', this.checked)">
+                            <span class="slider round"></span>
+                        </label>
+                        <span class="availability-label">${item.available ? 'Disponible' : 'Indisponible'}</span>
+                    </div>
+                </div>
+                <button class="btn-icon danger" onclick="app.deleteMenuItemFromDB('${item.id}')" title="Supprimer">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </div>
+        `).join('');
+    },
+
+    addMenuItemToDB: async () => {
+        if (!app.currentPizzeriaId) return;
+
+        const newItem = {
+            pizzeria_id: app.currentPizzeriaId,
+            category: app.activeMenuCategory === 'all' ? 'pizza' : app.activeMenuCategory,
+            name: 'Nouveau produit',
+            description: '',
+            price: 10,
+            available: true
+        };
+
+        const { data, error } = await supabase.from('menu_items').insert([newItem]).select().single();
+
+        if (error) {
+            alert('Erreur: ' + error.message);
+        } else {
+            if (app.menuItemsCache) app.menuItemsCache.push(data);
+            app.renderMenuManagementList();
+        }
+    },
+
+    updateMenuItemInDB: async (id, field, value) => {
+        // Optimistic update
+        const itemIndex = app.menuItemsCache.findIndex(i => i.id === id);
+        if (itemIndex > -1) {
+            app.menuItemsCache[itemIndex][field] = value;
+            if (field === 'available') app.renderMenuManagementList(); // Re-render to update label text
+        }
+
+        const updateData = {};
+        updateData[field] = value;
+
+        const { error } = await supabase.from('menu_items').update(updateData).eq('id', id);
+
+        if (error) {
+            console.error('Update error:', error);
+            // Revert optimistic update if needed? For now just log.
+        }
+    },
+
+    deleteMenuItemFromDB: async (id) => {
+        if (!confirm('Supprimer définitivement ce produit ?')) return;
+
+        // Optimistic delete
+        app.menuItemsCache = app.menuItemsCache.filter(i => i.id !== id);
+        app.renderMenuManagementList();
+
+        const { error } = await supabase.from('menu_items').delete().eq('id', id);
+        if (error) {
+            alert('Erreur: ' + error.message);
+            app.loadMenuManagement(); // Reload on error
+        }
     },
 
     loadDashboard: async (isRefresh = false) => {

@@ -479,10 +479,12 @@
                         <li onclick="app.switchDashboardTab('stats')" id="menu-stats">
                             <i class="fa-solid fa-chart-line"></i> Stats
                         </li>
+                        <li onclick="app.switchDashboardTab('menu')" id="menu-menu">
+                            <i class="fa-solid fa-utensils"></i> Mon Menu
+                        </li>
                         <li onclick="app.switchDashboardTab('settings')" id="menu-settings">
                             <i class="fa-solid fa-gear"></i> Paramètres
                         </li>
-                    </ul>
                     </ul>
                     <button onclick="app.navigateTo('home')" class="logout">
                         <i class="fa-solid fa-right-from-bracket"></i>
@@ -496,7 +498,7 @@
                                 style="color: #888; font-size: 0.9rem; margin-top: 0.25rem;"></p>
                         </div>
                         <div class="status-badge-green">
-                            <i class="fa-solid fa-circle"></i> Agent Actif
+                            <div class="pulse-dot"></div> Agent Actif
                         </div>
                     </header>
 
@@ -555,6 +557,36 @@
                                 <h3>Total Appels Reçus</h3>
                                 <div class="value" id="total-calls-count">0</div>
                                 <p class="subtext">Depuis l'activation de l'agent</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="tab-menu" class="dashboard-tab" style="display: none;">
+                        <div class="settings-container">
+                            <div class="menu-editor-toolbar">
+                                <h3 class="mb-0"><i class="fa-solid fa-book-open"></i> Mon Menu</h3>
+                                <button onclick="app.addMenuItemToDB()" class="btn-primary"
+                                    style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                                    <i class="fa-solid fa-plus"></i> Ajouter un produit
+                                </button>
+                            </div>
+
+                            <div class="menu-categories-tabs">
+                                <button class="category-tab active"
+                                    onclick="app.filterMenuCategory('all')">Tout</button>
+                                <button class="category-tab" onclick="app.filterMenuCategory('pizza')">Pizzas</button>
+                                <button class="category-tab" onclick="app.filterMenuCategory('entree')">Entrées</button>
+                                <button class="category-tab"
+                                    onclick="app.filterMenuCategory('boisson')">Boissons</button>
+                                <button class="category-tab"
+                                    onclick="app.filterMenuCategory('dessert')">Desserts</button>
+                                <button class="category-tab"
+                                    onclick="app.filterMenuCategory('accompagnement')">Accompagnements</button>
+                            </div>
+
+                            <div class="menu-items-list" id="menu-management-list">
+                                <!-- Loaded dynamically -->
+                                <div class="empty-state">Chargement du menu...</div>
                             </div>
                         </div>
                     </div>
