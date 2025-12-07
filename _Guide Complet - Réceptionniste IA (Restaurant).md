@@ -394,5 +394,3 @@ Lien pour télécharger Blueprint ‘faireReservation’ :
 *Enjoy :)*  
 
 *Yass,*
-
-[image1]: <data:image/png;base64,iVBORw0KGgo
