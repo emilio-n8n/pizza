@@ -224,8 +224,43 @@ const app = {
         // Store pizzeria ID for later use
         app.currentPizzeriaId = pizzeriaData.id;
 
-        // Upload and analyze menu photo if provided
-        if (app.menuPhotoFile) {
+        // Check which source is selected
+        const menuUrl = document.getElementById('menuUrlInput')?.value?.trim();
+
+        // Handle URL scraping
+        if (menuUrl) {
+            submitBtn.innerText = 'Analyse du site web...';
+
+            try {
+                const { data: analysisResult, error: analysisError } = await supabase.functions.invoke('scrape-menu-from-url', {
+                    body: { url: menuUrl }
+                });
+
+                if (analysisError) throw analysisError;
+
+                if (analysisResult && analysisResult.items && analysisResult.items.length > 0) {
+                    // Show menu editor with analyzed items
+                    app.tempMenuItems = analysisResult.items;
+                    app.showMenuEditor();
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = originalText;
+                } else {
+                    // No items found, continue without menu
+                    alert('Aucun produit détecté sur le site. Vous pourrez ajouter le menu manuellement plus tard.');
+                    app.navigateTo('call-forwarding');
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = originalText;
+                }
+            } catch (analysisError) {
+                console.error('Menu scraping error:', analysisError);
+                alert('Erreur lors de l\'analyse du site. Vous pourrez ajouter le menu manuellement plus tard.');
+                app.navigateTo('call-forwarding');
+                submitBtn.disabled = false;
+                submitBtn.innerText = originalText;
+            }
+        }
+        // Handle image upload
+        else if (app.menuPhotoFile) {
             submitBtn.innerText = 'Upload du menu...';
 
             const fileName = `${pizzeriaData.id}/${Date.now()}_menu.jpg`;
@@ -236,7 +271,7 @@ const app = {
             if (uploadError) {
                 console.error('Menu upload error:', uploadError);
                 alert('Erreur lors de l\'upload du menu. Vous pourrez l\'ajouter plus tard.');
-                app.navigateTo('confirmation');
+                app.navigateTo('call-forwarding');
                 submitBtn.disabled = false;
                 submitBtn.innerText = originalText;
                 return;
@@ -271,20 +306,20 @@ const app = {
                 } else {
                     // No items found, continue without menu
                     alert('Aucun produit détecté dans le menu. Vous pourrez l\'ajouter manuellement plus tard.');
-                    app.navigateTo('confirmation');
+                    app.navigateTo('call-forwarding');
                     submitBtn.disabled = false;
                     submitBtn.innerText = originalText;
                 }
             } catch (analysisError) {
                 console.error('Menu analysis error:', analysisError);
                 alert('Erreur lors de l\'analyse du menu. Vous pourrez l\'ajouter manuellement plus tard.');
-                app.navigateTo('confirmation');
+                app.navigateTo('call-forwarding');
                 submitBtn.disabled = false;
                 submitBtn.innerText = originalText;
             }
         } else {
-            // No menu photo, continue
-            app.navigateTo('confirmation');
+            // No menu provided, continue
+            app.navigateTo('call-forwarding');
             submitBtn.disabled = false;
             submitBtn.innerText = originalText;
         }
@@ -1570,4 +1605,28 @@ const app = {
 document.addEventListener('DOMContentLoaded', () => {
     app.init();
     app.checkTracking();
+
+    // Handle menu source tabs
+    const sourceTabs = document.querySelectorAll('.source-tab');
+    sourceTabs.forEach(tab => {
+        tab.addEventListener('click', (e) => {
+            const source = e.target.dataset.source;
+
+            // Update active tab
+            sourceTabs.forEach(t => t.classList.remove('active'));
+            e.target.classList.add('active');
+
+            // Show/hide panels
+            const imagePanel = document.getElementById('image-source');
+            const urlPanel = document.getElementById('url-source');
+
+            if (source === 'image') {
+                imagePanel.style.display = 'block';
+                urlPanel.style.display = 'none';
+            } else {
+                imagePanel.style.display = 'none';
+                urlPanel.style.display = 'block';
+            }
+        });
+    });
 });

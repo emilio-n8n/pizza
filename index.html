@@ -217,11 +217,28 @@
                             <option>Napolitaine</option>
                         </select>
                     </div>
+                    
                     <div class="input-group">
-                        <label>Photo de votre menu</label>
-                        <input type="file" id="menuPhoto" accept="image/*" onchange="app.previewMenuPhoto(event)">
-                        <div id="menuPhotoPreview" style="display: none; margin-top: 1rem;">
-                            <img id="menuPhotoImg" style="max-width: 100%; border-radius: 8px; margin-bottom: 1rem;">
+                        <label>Comment souhaitez-vous ajouter votre menu ?</label>
+                        <div class="menu-source-tabs">
+                            <button type="button" class="source-tab active" data-source="image">
+                                📷 Photo du menu
+                            </button>
+                            <button type="button" class="source-tab" data-source="url">
+                                🔗 Lien vers votre site
+                            </button>
+                        </div>
+                        
+                        <div id="image-source" class="source-panel active">
+                            <input type="file" id="menuPhoto" accept="image/*" onchange="app.previewMenuPhoto(event)">
+                            <div id="menuPhotoPreview" style="display: none; margin-top: 1rem;">
+                                <img id="menuPhotoImg" style="max-width: 100%; border-radius: 8px; margin-bottom: 1rem;">
+                            </div>
+                        </div>
+                        
+                        <div id="url-source" class="source-panel" style="display: none;">
+                            <input type="url" id="menuUrlInput" placeholder="https://votre-site.com/menu">
+                            <p class="help-text">Collez le lien direct vers votre page menu</p>
                         </div>
                     </div>
                     <button type="submit" class="btn-primary btn-block">Créer mon Agent</button>

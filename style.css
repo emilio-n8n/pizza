@@ -2784,3 +2784,67 @@ button {
 .toggle-switch input:checked~.availability-label {
     color: #4CAF50;
 }
+/* Menu Source Tabs */
+.menu-source-tabs {
+    display: flex;
+    gap: 0.75rem;
+    margin: 1rem 0 1.5rem 0;
+}
+
+.source-tab {
+    flex: 1;
+    padding: 0.875rem 1rem;
+    background: #2a2a2a;
+    border: 2px solid #333;
+    border-radius: 8px;
+    color: #aaa;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.source-tab:hover {
+    border-color: #444;
+    background: #333;
+    color: #ddd;
+}
+
+.source-tab.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+.source-panel {
+    padding: 1.5rem;
+    background: #1a1a1a;
+    border-radius: 8px;
+    border: 1px solid #2a2a2a;
+}
+
+.source-panel.active {
+    display: block;
+}
+
+#menuUrlInput {
+    width: 100%;
+    padding: 0.75rem;
+    background: #0f0f0f;
+    border: 1px solid #333;
+    border-radius: 6px;
+    color: white;
+    font-size: 1rem;
+}
+
+#menuUrlInput:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(255, 87, 34, 0.1);
+}
+
+.help-text {
+    margin-top: 0.5rem;
+    color: #666;
+    font-size: 0.875rem;
+}
