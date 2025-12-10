@@ -36,7 +36,7 @@ Deno.serve(async (req: Request) => {
 
         // Initialize Gemini
         const genAI = new GoogleGenerativeAI(Deno.env.get('GEMINI_API_KEY') || '');
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
 
         // Prepare the prompt
         const prompt = `Analyse cette image de menu de pizzeria et extrais toutes les informations en JSON.
