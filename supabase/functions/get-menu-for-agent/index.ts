@@ -13,12 +13,27 @@ serve(async (req) => {
     }
 
     try {
+        // Log the request for debugging
+        console.log('Request method:', req.method);
+        console.log('Request headers:', Object.fromEntries(req.headers.entries()));
+
         const supabaseClient = createClient(
             Deno.env.get('SUPABASE_URL') ?? '',
             Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
         )
 
-        const { pizzeria_id, category } = await req.json()
+        let body;
+        try {
+            const text = await req.text();
+            console.log('Request body (raw):', text);
+            body = text ? JSON.parse(text) : {};
+        } catch (parseError) {
+            console.error('JSON parse error:', parseError);
+            throw new Error('Invalid JSON in request body');
+        }
+
+        const { pizzeria_id, category } = body;
+        console.log('Parsed params:', { pizzeria_id, category });
 
         if (!pizzeria_id) {
             throw new Error('pizzeria_id is required')
@@ -38,7 +53,12 @@ serve(async (req) => {
 
         const { data: menuItems, error } = await query;
 
-        if (error) throw error;
+        if (error) {
+            console.error('Database error:', error);
+            throw error;
+        }
+
+        console.log('Found menu items:', menuItems?.length || 0);
 
         // Format menu for agent readability
         const formattedMenu = {};
@@ -51,13 +71,13 @@ serve(async (req) => {
             if (items.length > 0) {
                 formattedMenu[cat] = items.map(item => {
                     let itemStr = item.name;
-                    if (item.description) itemStr += ` (${item.description})`;
+
+                    // Always include description if available
+                    if (item.description && item.description.trim()) {
+                        itemStr += ` - ${item.description}`;
+                    }
 
                     if (item.size) {
-                        // It's a sized item, usually singular in DB for now based on our structure
-                        // But if we have multiple entries for same pizza diff sizes, we should ideally group them?
-                        // Our current structure has one row per size variation (based on Gemini analysis)
-                        // Let's just output it simply: "Margherita (Petite): 10€"
                         itemStr += ` [${item.size}]: ${item.price}€`;
                     } else {
                         itemStr += `: ${item.price}€`;
@@ -67,12 +87,15 @@ serve(async (req) => {
             }
         });
 
+        console.log('Formatted menu:', formattedMenu);
+
         return new Response(
             JSON.stringify(formattedMenu),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
 
     } catch (error) {
+        console.error('Error in get-menu-for-agent:', error);
         return new Response(
             JSON.stringify({ error: error.message }),
             {

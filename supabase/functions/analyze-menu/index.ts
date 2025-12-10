@@ -62,7 +62,22 @@ Règles importantes :
 - Pour les pizzas, utilise "small", "medium", "large" pour les tailles (ou laisse vide si une seule taille)
 - Ignore les éléments décoratifs, logos, et informations non liées aux produits
 - Si un prix n'est pas clair, estime-le en fonction du contexte
-- Retourne UNIQUEMENT le JSON, sans texte supplémentaire
+
+RÈGLES POUR LES DESCRIPTIONS :
+- Si une description est visible sur le menu, extrais-la exactement
+- Pour les pizzas classiques SANS description visible, ajoute une description standard basée sur la recette traditionnelle :
+  * Margherita : "sauce tomate, mozzarella, basilic"
+  * Regina : "sauce tomate, mozzarella, jambon, champignons"
+  * Quatre fromages : "mozzarella, gorgonzola, parmesan, chèvre"
+  * Napolitaine : "sauce tomate, mozzarella, anchois, câpres, olives"
+  * Calzone : "pizza pliée garnie de jambon, mozzarella, champignons"
+  * Végétarienne : "sauce tomate, mozzarella, légumes de saison"
+  * Hawaïenne : "sauce tomate, mozzarella, jambon, ananas"
+  * Pepperoni : "sauce tomate, mozzarella, pepperoni"
+- Pour les pizzas avec des noms spéciaux ou créatifs (ex: "Angelo's Special", "Glen Ridge Special") SANS description visible, laisse le champ description vide
+- Pour les boissons, entrées, desserts : extrais la description si visible, sinon laisse vide
+
+Retourne UNIQUEMENT le JSON, sans texte supplémentaire.
 
 Réponds uniquement avec le JSON valide.`;
 
