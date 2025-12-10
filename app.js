@@ -247,14 +247,14 @@ const app = {
                 } else {
                     // No items found, continue without menu
                     alert('Aucun produit détecté sur le site. Vous pourrez ajouter le menu manuellement plus tard.');
-                    app.navigateTo('call-forwarding');
+                    app.navigateTo('confirmation');
                     submitBtn.disabled = false;
                     submitBtn.innerText = originalText;
                 }
             } catch (analysisError) {
                 console.error('Menu scraping error:', analysisError);
                 alert('Erreur lors de l\'analyse du site. Vous pourrez ajouter le menu manuellement plus tard.');
-                app.navigateTo('call-forwarding');
+                app.navigateTo('confirmation');
                 submitBtn.disabled = false;
                 submitBtn.innerText = originalText;
             }
@@ -271,7 +271,7 @@ const app = {
             if (uploadError) {
                 console.error('Menu upload error:', uploadError);
                 alert('Erreur lors de l\'upload du menu. Vous pourrez l\'ajouter plus tard.');
-                app.navigateTo('call-forwarding');
+                app.navigateTo('confirmation');
                 submitBtn.disabled = false;
                 submitBtn.innerText = originalText;
                 return;
@@ -306,20 +306,20 @@ const app = {
                 } else {
                     // No items found, continue without menu
                     alert('Aucun produit détecté dans le menu. Vous pourrez l\'ajouter manuellement plus tard.');
-                    app.navigateTo('call-forwarding');
+                    app.navigateTo('confirmation');
                     submitBtn.disabled = false;
                     submitBtn.innerText = originalText;
                 }
             } catch (analysisError) {
                 console.error('Menu analysis error:', analysisError);
                 alert('Erreur lors de l\'analyse du menu. Vous pourrez l\'ajouter manuellement plus tard.');
-                app.navigateTo('call-forwarding');
+                app.navigateTo('confirmation');
                 submitBtn.disabled = false;
                 submitBtn.innerText = originalText;
             }
         } else {
             // No menu provided, continue
-            app.navigateTo('call-forwarding');
+            app.navigateTo('confirmation');
             submitBtn.disabled = false;
             submitBtn.innerText = originalText;
         }
