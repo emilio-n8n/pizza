@@ -1338,6 +1338,47 @@ const app = {
     showMenuEditor: () => {
         const modal = document.getElementById('menu-editor-modal');
         if (modal) {
+            // Normalize categories to match database constraints
+            const validCategories = ['pizza', 'boisson', 'dessert', 'entree', 'accompagnement', 'autre'];
+
+            if (app.tempMenuItems) {
+                app.tempMenuItems = app.tempMenuItems.map(item => {
+                    let category = (item.category || 'autre').toLowerCase().trim();
+
+                    // Map common variations to valid categories
+                    const categoryMap = {
+                        'pizzas': 'pizza',
+                        'boissons': 'boisson',
+                        'desserts': 'dessert',
+                        'entrees': 'entree',
+                        'entrée': 'entree',
+                        'entrées': 'entree',
+                        'accompagnements': 'accompagnement',
+                        'autres': 'autre',
+                        'drink': 'boisson',
+                        'drinks': 'boisson',
+                        'starter': 'entree',
+                        'starters': 'entree',
+                        'side': 'accompagnement',
+                        'sides': 'accompagnement'
+                    };
+
+                    // Apply mapping
+                    category = categoryMap[category] || category;
+
+                    // If still invalid, default to 'autre'
+                    if (!validCategories.includes(category)) {
+                        console.warn(`Invalid category "${item.category}" normalized to "autre"`);
+                        category = 'autre';
+                    }
+
+                    return {
+                        ...item,
+                        category: category
+                    };
+                });
+            }
+
             modal.style.display = 'flex'; // Use flex to center
             app.renderMenuItemsTable();
         }
