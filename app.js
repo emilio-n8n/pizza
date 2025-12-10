@@ -1594,7 +1594,7 @@ const app = {
                 .eq('id', app.currentPizzeriaId);
 
             document.getElementById('menu-editor-modal').style.display = 'none';
-            app.navigateTo('call-forwarding');
+            app.navigateTo('confirmation');
 
         } catch (error) {
             console.error('Error saving menu:', error);
