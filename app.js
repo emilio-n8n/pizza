@@ -524,7 +524,10 @@ const app = {
             app.ordersRefreshInterval = setInterval(() => app.loadDashboard(true), 30000);
         }
         const user = app.state.session?.user;
-        if (!user) return;
+        if (!user) {
+            console.error('No user session found');
+            return;
+        }
 
         const { data: pizzeria, error } = await supabase
             .from('pizzerias')
@@ -532,21 +535,35 @@ const app = {
             .eq('user_id', user.id)
             .single();
 
-        if (pizzeria) {
-            document.getElementById('dash-title').innerText = `Commandes - ${pizzeria.name}`;
-
-            // Afficher les infos de contact
-            const contactInfo = document.getElementById('pizzeria-contact-info');
-            if (contactInfo) {
-                contactInfo.innerHTML = `
-                    <p><strong>Téléphone de contact:</strong> ${pizzeria.contact_phone || 'Non renseigné'}</p>
-                `;
+        if (error) {
+            console.error('Error loading pizzeria:', error);
+            // If no pizzeria found, redirect to onboarding
+            if (error.code === 'PGRST116') {
+                console.log('No pizzeria found, redirecting to onboarding');
+                app.navigateTo('onboarding');
+                return;
             }
+        }
 
-            // Update stats
-            if (document.getElementById('total-calls-count')) {
-                document.getElementById('total-calls-count').innerText = pizzeria.agent_usage_count || 0;
-            }
+        if (!pizzeria) {
+            console.error('Pizzeria is null');
+            app.navigateTo('onboarding');
+            return;
+        }
+
+        document.getElementById('dash-title').innerText = `Commandes - ${pizzeria.name}`;
+
+        // Afficher les infos de contact
+        const contactInfo = document.getElementById('pizzeria-contact-info');
+        if (contactInfo) {
+            contactInfo.innerHTML = `
+                <p><strong>Téléphone de contact:</strong> ${pizzeria.contact_phone || 'Non renseigné'}</p>
+            `;
+        }
+
+        // Update stats
+        if (document.getElementById('total-calls-count')) {
+            document.getElementById('total-calls-count').innerText = pizzeria.agent_usage_count || 0;
         }
 
         // Charger les commandes réelles
