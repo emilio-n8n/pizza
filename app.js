@@ -572,16 +572,20 @@ const app = {
 
         if (error) {
             console.error('Error loading pizzeria:', error);
-            // If no pizzeria found, redirect to onboarding
+            // If no pizzeria found (PGRST116), redirect to onboarding
             if (error.code === 'PGRST116') {
                 console.log('No pizzeria found, redirecting to onboarding');
                 app.navigateTo('onboarding');
                 return;
             }
+            // For other errors (like 406), show error but don't redirect
+            console.error('Database error, but not redirecting:', error);
+            alert('Erreur de chargement. Veuillez rafraîchir la page.');
+            return;
         }
 
         if (!pizzeria) {
-            console.error('Pizzeria is null');
+            console.error('Pizzeria is null but no error');
             app.navigateTo('onboarding');
             return;
         }
