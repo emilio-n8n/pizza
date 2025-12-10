@@ -81,7 +81,16 @@ Réponds uniquement avec le JSON valide.`;
             // Fetch image from URL
             const imageResponse = await fetch(imageUrl);
             const imageBuffer = await imageResponse.arrayBuffer();
-            const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
+
+            // Convert to base64 using proper method to avoid stack overflow
+            const bytes = new Uint8Array(imageBuffer);
+            let binary = '';
+            const chunkSize = 0x8000; // 32KB chunks
+            for (let i = 0; i < bytes.length; i += chunkSize) {
+                const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+                binary += String.fromCharCode.apply(null, Array.from(chunk));
+            }
+            const base64Image = btoa(binary);
 
             const imagePart = {
                 inlineData: {
