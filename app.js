@@ -1441,28 +1441,63 @@ const app = {
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sauvegarde...';
 
         try {
+            console.log('Starting menu save...', {
+                pizzeriaId: app.currentPizzeriaId,
+                itemsCount: app.tempMenuItems?.length
+            });
+
+            if (!app.currentPizzeriaId) {
+                throw new Error('Pizzeria ID manquant');
+            }
+
+            if (!app.tempMenuItems || app.tempMenuItems.length === 0) {
+                throw new Error('Aucun produit à sauvegarder');
+            }
+
             const itemsToSave = app.tempMenuItems.map((item, index) => ({
                 pizzeria_id: app.currentPizzeriaId,
                 category: item.category,
                 name: item.name,
-                description: item.description,
-                price: item.price,
+                description: item.description || '',
+                price: parseFloat(item.price),
                 size: item.size || null,
                 available: true,
                 display_order: index
             }));
 
+            console.log('Items to save:', itemsToSave);
+
             // Delete existing items (if any, though this is onboarding)
-            // Just in case we are re-running this
-            await supabase.from('menu_items').delete().eq('pizzeria_id', app.currentPizzeriaId);
+            const { error: deleteError } = await supabase
+                .from('menu_items')
+                .delete()
+                .eq('pizzeria_id', app.currentPizzeriaId);
+
+            if (deleteError) {
+                console.warn('Delete error (may be normal if no items):', deleteError);
+            }
 
             // Insert new items
-            const { error } = await supabase.from('menu_items').insert(itemsToSave);
+            const { data, error } = await supabase
+                .from('menu_items')
+                .insert(itemsToSave)
+                .select();
 
-            if (error) throw error;
+            if (error) {
+                console.error('Insert error:', error);
+                throw error;
+            }
+
+            console.log('Menu saved successfully:', data);
+
+            // Update pizzeria with analysis timestamp
+            await supabase
+                .from('pizzerias')
+                .update({ menu_analyzed_at: new Date().toISOString() })
+                .eq('id', app.currentPizzeriaId);
 
             document.getElementById('menu-editor-modal').style.display = 'none';
-            app.navigateTo('confirmation');
+            app.navigateTo('call-forwarding');
 
         } catch (error) {
             console.error('Error saving menu:', error);
