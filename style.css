@@ -2982,16 +2982,24 @@ button {
         font-size: 1.5rem;
     }
 }
+
 /* --- PREMIUM TRACKING PAGE --- */
 #tracking {
     background: radial-gradient(circle at top right, #1a1a1a, #000000);
     min-height: 100vh;
-    display: flex;
+    /* display: flex; <-- REMOVED: Managed by .view.active */
+    display: none;
+    /* Default hidden like other views */
     align-items: center;
     justify-content: center;
     padding: 1rem;
     position: relative;
     overflow: hidden;
+}
+
+#tracking.active {
+    display: flex;
+    /* Only flex when active */
 }
 
 /* Background Gradients/Glows */
@@ -3040,8 +3048,15 @@ button {
 }
 
 @keyframes cardFloat {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Header */
@@ -3058,8 +3073,17 @@ button {
 }
 
 @keyframes pulseLogo {
-    0%, 100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.1); opacity: 0.8; }
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
 }
 
 .premium-title {
@@ -3114,7 +3138,11 @@ button {
     z-index: 2;
 }
 
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
 
 .status-title {
     font-size: 1.75rem;
@@ -3240,8 +3268,10 @@ button {
 
 .summary-content {
     max-height: 0;
-    overflow: hidden; /* Important for accordion functionality */
-    transition: max-height 0.4s ease-out; /* Smooth transition */
+    overflow: hidden;
+    /* Important for accordion functionality */
+    transition: max-height 0.4s ease-out;
+    /* Smooth transition */
 }
 
 .order-summary-accordion.active .summary-content {
@@ -3307,12 +3337,12 @@ button {
         padding: 1.5rem;
         border-radius: 20px;
     }
-    
+
     .status-ring-container {
         width: 120px;
         height: 120px;
     }
-    
+
     .status-title {
         font-size: 1.5rem;
     }
