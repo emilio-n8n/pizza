@@ -3564,3 +3564,29 @@ input:checked + .slider:before {
     font-size: 0.8rem;
     color: #888;
 }
+
+/* --- MODIFIERS BADGES & TABLE --- */
+.badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.badge.base { background: rgba(52, 152, 219, 0.2); color: #3498db; }
+.badge.supplement { background: rgba(46, 204, 113, 0.2); color: #2ecc71; }
+.badge.ingredient { background: rgba(231, 76, 60, 0.2); color: #e74c3c; }
+.badge.option { background: rgba(155, 89, 182, 0.2); color: #9b59b6; }
+
+.modifier-form input, .modifier-form select {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: white;
+    padding: 0.5rem;
+    border-radius: 4px;
+}
+
+.modifier-form button {
+    height: 100%;
+}

@@ -958,10 +958,41 @@ const app = {
             .single();
 
         if (pizzeria && pizzeria.phone_number) {
-            document.getElementById('agent-phone-number').innerText = pizzeria.phone_number;
-            document.querySelectorAll('.agent-number-display').forEach(el => {
-                el.innerText = pizzeria.phone_number;
-            });
+            const phoneNumber = pizzeria.phone_number;
+
+            // Update display
+            const numberDisplay = document.querySelector('.number-text');
+            if (numberDisplay) numberDisplay.innerText = phoneNumber.match(/.{1,2}/g).join(' ');
+
+            // Update Operator Codes
+            const codesContainer = document.getElementById('operator-codes');
+            if (codesContainer) {
+                codesContainer.innerHTML = `
+                    <div class="operator-item">
+                        <span class="operator-name">Orange / Sosh</span>
+                        <code class="code-snippet">**21*${phoneNumber}#</code>
+                    </div>
+                    <div class="operator-item">
+                        <span class="operator-name">SFR / Red</span>
+                        <code class="code-snippet">*21*${phoneNumber}#</code>
+                    </div>
+                    <div class="operator-item">
+                        <span class="operator-name">Bouygues</span>
+                        <code class="code-snippet">*61*${phoneNumber}#</code>
+                    </div>
+                    <div class="operator-item">
+                        <span class="operator-name">Free</span>
+                        <code class="code-snippet">*21*${phoneNumber}#</code>
+                    </div>
+                    <p class="text-xs text-muted mt-2">Appuyez sur la touche appel après avoir composé le code.</p>
+                `;
+            }
+
+            // Update copy button behavior
+            const copyBtn = document.querySelector('.number-display-premium');
+            if (copyBtn) {
+                copyBtn.onclick = () => app.copyToClipboard(phoneNumber);
+            }
         }
     },
 
@@ -1903,10 +1934,10 @@ app.saveBusinessRules = async () => {
 app.toggleKitchenLoad = async () => {
     const btn = document.getElementById('kitchen-load-btn');
     const isFire = btn.classList.contains('status-badge-red'); // currently fire
-    
+
     // Toggle state locally first for responsiveness
     const newStatus = isFire ? 'normal' : 'fire';
-    
+
     // Optimistic UI update
     if (newStatus === 'fire') {
         btn.classList.remove('status-badge-neutral');
@@ -1953,3 +1984,193 @@ app.loadDashboard = async () => {
     await originalLoadDashboard();
     app.initKitchenLoadState();
 };
+
+// --- MODIFIERS LOGIC START ---
+
+app.showModifiersModal = () => {
+    document.getElementById('modifiers-modal').style.display = 'flex';
+    app.loadModifiers();
+};
+
+app.loadModifiers = async () => {
+    const tbody = document.getElementById('modifiers-tbody');
+    tbody.innerHTML = '<tr><td colspan="5">Chargement...</td></tr>';
+
+    const { data: modifiers, error } = await supabase
+        .from('product_modifiers')
+        .select('*')
+        .eq('pizzeria_id', app.currentPizzeria.id)
+        .order('category')
+        .order('name');
+
+    if (error) {
+        tbody.innerHTML = '<tr><td colspan="5">Erreur de chargement</td></tr>';
+        return;
+    }
+
+    if (!modifiers || modifiers.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center text-muted">Aucune option configurée. Ajoutez "Base Crème", "Supplément Chèvre", etc.</td>
+            </tr>`;
+        return;
+    }
+
+    tbody.innerHTML = modifiers.map(mod => `
+        <tr>
+            <td><strong>${mod.name}</strong></td>
+            <td><span class="badge ${mod.category}">${mod.category}</span></td>
+            <td>+${mod.price_extra}€</td>
+            <td>
+                <label class="toggle-switch small">
+                    <input type="checkbox" ${mod.available ? 'checked' : ''} onchange="app.toggleModifierAvailability('${mod.id}', this.checked)">
+                    <span class="slider round"></span>
+                </label>
+            </td>
+            <td>
+                <button onclick="app.deleteModifier('${mod.id}')" class="btn-icon text-danger">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+};
+
+app.addModifier = async () => {
+    const name = document.getElementById('mod-name').value;
+    const category = document.getElementById('mod-category').value;
+    const price = document.getElementById('mod-price').value;
+
+    if (!name) return alert('Le nom est obligatoire');
+
+    const { error } = await supabase
+        .from('product_modifiers')
+        .insert({
+            pizzeria_id: app.currentPizzeria.id,
+            name: name,
+            category: category,
+            price_extra: parseFloat(price) || 0,
+            available: true
+        });
+
+    if (error) alert('Erreur: ' + error.message);
+    else {
+        // Clear inputs
+        document.getElementById('mod-name').value = '';
+        document.getElementById('mod-price').value = '0';
+        app.loadModifiers();
+    }
+};
+
+app.deleteModifier = async (id) => {
+    if (!confirm('Supprimer cette option ?')) return;
+    const { error } = await supabase.from('product_modifiers').delete().eq('id', id);
+    if (!error) app.loadModifiers();
+};
+
+app.toggleModifierAvailability = async (id, isAvailable) => {
+    // Optimistic UI handled by checkbox
+    const { error } = await supabase
+        .from('product_modifiers')
+        .update({ available: isAvailable })
+        .eq('id', id);
+
+    if (error) console.error('Error updating modifier:', error);
+};
+
+// --- MODIFIERS LOGIC END ---
+
+// --- MODIFIERS LOGIC START ---
+
+app.showModifiersModal = () => {
+    document.getElementById('modifiers-modal').style.display = 'flex';
+    app.loadModifiers();
+};
+
+app.loadModifiers = async () => {
+    const tbody = document.getElementById('modifiers-tbody');
+    tbody.innerHTML = '<tr><td colspan="5">Chargement...</td></tr>';
+
+    const { data: modifiers, error } = await supabase
+        .from('product_modifiers')
+        .select('*')
+        .eq('pizzeria_id', app.currentPizzeria.id)
+        .order('category')
+        .order('name');
+
+    if (error) {
+        tbody.innerHTML = '<tr><td colspan="5">Erreur de chargement</td></tr>';
+        return;
+    }
+
+    if (!modifiers || modifiers.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center text-muted">Aucune option configurée. Ajoutez "Base Crème", "Supplément Chèvre", etc.</td>
+            </tr>`;
+        return;
+    }
+
+    tbody.innerHTML = modifiers.map(mod => `
+        <tr>
+            <td><strong>${mod.name}</strong></td>
+            <td><span class="badge ${mod.category}">${mod.category}</span></td>
+            <td>+${mod.price_extra}€</td>
+            <td>
+                <label class="toggle-switch small">
+                    <input type="checkbox" ${mod.available ? 'checked' : ''} onchange="app.toggleModifierAvailability('${mod.id}', this.checked)">
+                    <span class="slider round"></span>
+                </label>
+            </td>
+            <td>
+                <button onclick="app.deleteModifier('${mod.id}')" class="btn-icon text-danger">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+};
+
+app.addModifier = async () => {
+    const name = document.getElementById('mod-name').value;
+    const category = document.getElementById('mod-category').value;
+    const price = document.getElementById('mod-price').value;
+
+    if (!name) return alert('Le nom est obligatoire');
+
+    const { error } = await supabase
+        .from('product_modifiers')
+        .insert({
+            pizzeria_id: app.currentPizzeria.id,
+            name: name,
+            category: category,
+            price_extra: parseFloat(price) || 0,
+            available: true
+        });
+
+    if (error) alert('Erreur: ' + error.message);
+    else {
+        // Clear inputs
+        document.getElementById('mod-name').value = '';
+        document.getElementById('mod-price').value = '0';
+        app.loadModifiers();
+    }
+};
+
+app.deleteModifier = async (id) => {
+    if (!confirm('Supprimer cette option ?')) return;
+    const { error } = await supabase.from('product_modifiers').delete().eq('id', id);
+    if (!error) app.loadModifiers();
+};
+
+app.toggleModifierAvailability = async (id, isAvailable) => {
+    // Optimistic UI handled by checkbox
+    const { error } = await supabase
+        .from('product_modifiers')
+        .update({ available: isAvailable })
+        .eq('id', id);
+
+    if (error) console.error('Error updating modifier:', error);
+};
+
+// --- MODIFIERS LOGIC END ---

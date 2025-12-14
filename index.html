@@ -597,6 +597,13 @@
                                 </button>
                             </div>
 
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <h3>Produits</h3>
+                                <button class="btn-secondary btn-sm" onclick="app.showModifiersModal()">
+                                    <i class="fa-solid fa-layer-group"></i> Options & Suppléments
+                                </button>
+                            </div>
+
                             <div class="menu-categories-tabs">
                                 <button class="category-tab active"
                                     onclick="app.filterMenuCategory('all')">Tout</button>
@@ -934,3 +941,43 @@
 
 </html>
 ```
+        <!-- Modifiers Management Modal -->
+        <div id="modifiers-modal" class="modal" style="display: none;">
+            <div class="modal-content" style="max-width: 700px;">
+                <span class="modal-close" onclick="document.getElementById('modifiers-modal').style.display = 'none'">&times;</span>
+                <h2><i class="fa-solid fa-layer-group"></i> Options & Suppléments (Global)</h2>
+                <p>Ces options seront disponibles pour l'Agent IA lorsqu'un client personnalise sa commande.</p>
+
+                <div class="modifier-form" style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                    <h4 style="margin-top:0;">Ajouter une option</h4>
+                    <div style="display: grid; grid-template-columns: 2fr 2fr 1fr auto; gap: 0.5rem; align-items: end;">
+                        <input type="text" id="mod-name" placeholder="Nom (ex: Base Crème)">
+                        <select id="mod-category">
+                            <option value="base">Base (ex: Crème, Tomate)</option>
+                            <option value="supplement">Supplément (ex: Chèvre, Oeuf)</option>
+                            <option value="ingredient">Ingrédient à enlever (ex: Sans Oignons)</option>
+                            <option value="option">Autre Option (ex: Bien cuite)</option>
+                        </select>
+                        <input type="number" id="mod-price" placeholder="Prix €" step="0.10" value="0">
+                        <button class="btn-primary" onclick="app.addModifier()">Ajouter</button>
+                    </div>
+                </div>
+
+                <div class="modifiers-list-container">
+                    <table class="data-table" style="width: 100%;">
+                        <thead>
+                            <tr>
+                                <th>Nom</th>
+                                <th>Type</th>
+                                <th>Prix Extra</th>
+                                <th>Dispo</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modifiers-tbody">
+                            <!-- Loaded via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
