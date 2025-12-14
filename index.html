@@ -217,7 +217,7 @@
                             <option>Napolitaine</option>
                         </select>
                     </div>
-                    
+
                     <div class="input-group">
                         <label>Comment souhaitez-vous ajouter votre menu ?</label>
                         <div class="menu-source-tabs">
@@ -228,14 +228,15 @@
                                 🔗 Lien vers votre site
                             </button>
                         </div>
-                        
+
                         <div id="image-source" class="source-panel active">
                             <input type="file" id="menuPhoto" accept="image/*" onchange="app.previewMenuPhoto(event)">
                             <div id="menuPhotoPreview" style="display: none; margin-top: 1rem;">
-                                <img id="menuPhotoImg" style="max-width: 100%; border-radius: 8px; margin-bottom: 1rem;">
+                                <img id="menuPhotoImg"
+                                    style="max-width: 100%; border-radius: 8px; margin-bottom: 1rem;">
                             </div>
                         </div>
-                        
+
                         <div id="url-source" class="source-panel" style="display: none;">
                             <input type="url" id="menuUrlInput" placeholder="https://votre-site.com/menu">
                             <p class="help-text">Collez le lien direct vers votre page menu</p>
@@ -687,64 +688,97 @@
 
         <!-- 9. Suivi de Commande (Client) -->
         <section id="tracking" class="view">
-            <div class="tracking-container">
-                <div class="tracking-card" id="tracking-card-container">
+            <div class="tracking-premium-wrapper">
+                <div class="tracking-premium-card">
 
-                    <!-- Content State -->
-                    <div id="tracking-content">
-                        <div class="tracking-header">
-                            <h2><i class="fa-solid fa-pizza-slice text-primary"></i> Suivi de commande</h2>
-                            <p id="tracking-order-id" class="text-muted">#...</p>
+                    <!-- Header -->
+                    <div class="premium-header">
+                        <div class="premium-logo">
+                            <i class="fa-solid fa-pizza-slice"></i>
                         </div>
+                        <h2 class="premium-title">Suivi Live</h2>
+                        <div class="order-badge" id="tracking-order-id">#Loading</div>
+                    </div>
 
-                        <div class="tracking-status">
-                            <div class="status-icon-large" id="tracking-icon">
+                    <!-- Main Status Display -->
+                    <div class="premium-status-display">
+                        <div class="status-ring-container">
+                            <div class="status-ring" id="status-ring"></div>
+                            <div class="status-icon-center" id="tracking-icon">
                                 <i class="fa-solid fa-circle-notch fa-spin"></i>
                             </div>
-                            <h3 id="tracking-status-text">Chargement...</h3>
-                            <p id="tracking-status-desc" class="text-muted">Veuillez patienter.</p>
                         </div>
+                        <h1 class="status-title" id="tracking-status-text">Chargement...</h1>
+                        <p class="status-subtitle" id="tracking-status-desc">Connexion au four...</p>
+                    </div>
 
-                        <div class="tracking-steps">
-                            <div class="step" id="step-new">
-                                <div class="step-dot"></div>
-                                <div class="step-label">Reçue</div>
+                    <!-- Timeline -->
+                    <div class="premium-timeline">
+                        <div class="timeline-step" id="step-new">
+                            <div class="step-indicator">
+                                <i class="fa-solid fa-check"></i>
                             </div>
-                            <div class="step" id="step-preparing">
-                                <div class="step-dot"></div>
-                                <div class="step-label">Cuisine</div>
-                            </div>
-                            <div class="step" id="step-delivering">
-                                <div class="step-dot"></div>
-                                <div class="step-label">Route</div>
-                            </div>
-                            <div class="step" id="step-delivered">
-                                <div class="step-dot"></div>
-                                <div class="step-label">Livrée</div>
+                            <div class="step-content">
+                                <h4>Confirmée</h4>
+                                <p>Commande reçue</p>
                             </div>
                         </div>
-
-                        <div class="tracking-details">
-                            <h4><i class="fa-solid fa-receipt"></i> Votre commande</h4>
-                            <div id="tracking-items" class="tracking-items-list">
-                                <!-- Items -->
+                        <div class="timeline-step" id="step-preparing">
+                            <div class="step-indicator">
+                                <i class="fa-solid fa-fire-burner"></i>
                             </div>
-                            <div class="tracking-total">
+                            <div class="step-content">
+                                <h4>En préparation</h4>
+                                <p>C'est chaud !</p>
+                            </div>
+                        </div>
+                        <div class="timeline-step" id="step-delivering">
+                            <div class="step-indicator">
+                                <i class="fa-solid fa-motorcycle"></i>
+                            </div>
+                            <div class="step-content">
+                                <h4>En route</h4>
+                                <p>Livreur parti</p>
+                            </div>
+                        </div>
+                        <div class="timeline-step" id="step-delivered">
+                            <div class="step-indicator">
+                                <i class="fa-solid fa-house"></i>
+                            </div>
+                            <div class="step-content">
+                                <h4>Livrée</h4>
+                                <p>Bon appétit !</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Order Summary Toggle -->
+                    <div class="order-summary-accordion">
+                        <button class="summary-toggle" onclick="this.parentElement.classList.toggle('active')">
+                            <span>Voir le détail</span>
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </button>
+                        <div class="summary-content">
+                            <div id="tracking-items" class="premium-items-list">
+                                <!-- Items injected here -->
+                            </div>
+                            <div class="premium-total">
                                 <span>Total</span>
                                 <span id="tracking-total">... €</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Error State -->
-                    <div id="tracking-error" style="display: none; text-align: center; padding: 2rem 0;">
-                        <div style="font-size: 3rem; color: #ff4444; margin-bottom: 1rem;">
-                            <i class="fa-solid fa-triangle-exclamation"></i>
-                        </div>
-                        <h3>Commande introuvable</h3>
-                        <p class="text-muted mb-4">Le numéro de commande est incorrect ou a expiré.</p>
-                        <button onclick="app.navigateTo('home')" class="btn-secondary">Retour à l'accueil</button>
+                    <!-- Error View -->
+                    <div id="tracking-error" style="display: none;">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <h3>Oups !</h3>
+                        <p>Impossible de trouver cette commande.</p>
+                        <button onclick="app.navigateTo('home')" class="btn-primary">Retour</button>
                     </div>
+
+                    <!-- Content View Wrapper (for easy toggling) -->
+                    <div id="tracking-content" style="display: contents;"></div>
 
                 </div>
             </div>

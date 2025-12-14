@@ -1322,24 +1322,18 @@ const app = {
         const itemsList = document.getElementById('tracking-items');
         itemsList.innerHTML = Array.isArray(o.items)
             ? o.items.map(item => `
-                <div class="tracking-item">
+                <div class="premium-item">
                     <span>${item.quantity}x ${item.name}</span>
                     <span>${(item.price * item.quantity).toFixed(2)} €</span>
                 </div>
             `).join('')
-            : '';
+            : '<div class="text-center text-muted">Aucun article</div>';
 
         // Status Logic
-        const steps = ['new', 'preparing', 'waiting_delivery', 'delivering', 'delivered'];
-        // Map waiting_delivery to 'preparing' step visually if we only have 4 steps, OR add a step.
-        // Let's keep the UI simple with 4 main visual steps: Reçue -> Préparation -> Livraison -> Terminée
-        // 'waiting_delivery' can be part of 'preparing' or 'delivering' phase visually? 
-        // Let's create a visual mapping.
-
         let visualStepIndex = 0;
         if (o.status === 'new') visualStepIndex = 0;
         if (o.status === 'preparing') visualStepIndex = 1;
-        if (o.status === 'waiting_delivery') visualStepIndex = 1; // Still in kitchen/ready
+        if (o.status === 'waiting_delivery') visualStepIndex = 1; // Still in kitchen visually
         if (o.status === 'delivering') visualStepIndex = 2;
         if (o.status === 'delivered') visualStepIndex = 3;
 
@@ -1354,10 +1348,17 @@ const app = {
             }
         });
 
-        // Update Text & Icon
+        // Update Text & Icon & Ring Color
         const statusText = document.getElementById('tracking-status-text');
         const statusDesc = document.getElementById('tracking-status-desc');
         const icon = document.getElementById('tracking-icon');
+        const ring = document.getElementById('status-ring');
+
+        // Reset ring style
+        if (ring) {
+            ring.style.borderTopColor = 'var(--primary)';
+            ring.style.boxShadow = '0 0 30px rgba(255, 87, 34, 0.1)';
+        }
 
         switch (o.status) {
             case 'new':
@@ -1369,21 +1370,36 @@ const app = {
                 statusText.innerText = "En Préparation";
                 statusDesc.innerText = "Vos pizzas sont au four !";
                 icon.innerHTML = '<i class="fa-solid fa-fire-burner"></i>';
+                if (ring) {
+                    ring.style.borderTopColor = '#ff9800'; // Orange for cooking
+                    ring.style.boxShadow = '0 0 40px rgba(255, 152, 0, 0.3)';
+                }
                 break;
             case 'waiting_delivery':
-                statusText.innerText = "Prête";
+                statusText.innerText = "Prête (Cuisine)";
                 statusDesc.innerText = "En attente d'un livreur.";
                 icon.innerHTML = '<i class="fa-solid fa-box-open"></i>';
+                if (ring) ring.style.borderTopColor = '#4caf50'; // Greenish
                 break;
             case 'delivering':
                 statusText.innerText = "En Livraison";
-                statusDesc.innerText = "Le livreur est en route vers chez vous.";
+                statusDesc.innerText = "Le livreur est en route.";
                 icon.innerHTML = '<i class="fa-solid fa-motorcycle"></i>';
+                if (ring) {
+                    ring.style.borderTopColor = '#2196f3'; // Blue for moving
+                    ring.style.boxShadow = '0 0 40px rgba(33, 150, 243, 0.3)';
+                }
                 break;
             case 'delivered':
                 statusText.innerText = "Livrée";
                 statusDesc.innerText = "Bon appétit !";
                 icon.innerHTML = '<i class="fa-solid fa-face-smile-beam"></i>';
+                if (ring) {
+                    ring.style.borderTopColor = '#00e676'; // Bright green
+                    ring.style.boxShadow = '0 0 50px rgba(0, 230, 118, 0.4)';
+                    ring.style.animation = 'none'; // Stop spinning
+                    ring.style.border = '3px solid #00e676'; // Full circle
+                }
                 if (app.trackingRefreshInterval) clearInterval(app.trackingRefreshInterval);
                 break;
         }
