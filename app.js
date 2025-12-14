@@ -1650,3 +1650,306 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
+// --- NEW SETTINGS LOGIC START ---
+
+app.switchSettingsSection = (sectionId) => {
+    // 1. Update Buttons
+    document.querySelectorAll('.settings-nav-btn').forEach(btn => btn.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+
+    // 2. Update Content
+    document.querySelectorAll('.settings-section').forEach(el => el.style.display = 'none');
+    document.getElementById(`settings-section-${sectionId}`).style.display = 'block';
+
+    // 3. Load specific data if needed
+    if (sectionId === 'general') app.loadGeneralSettings();
+    if (sectionId === 'hours') app.loadOpeningHours();
+    if (sectionId === 'zones') app.loadDeliveryZones();
+    if (sectionId === 'rules') app.loadBusinessRules();
+    if (sectionId === 'drivers') app.loadDriversList(); // Existing function
+};
+
+// 1. GENERAL SETTINGS
+app.loadGeneralSettings = async () => {
+    // Already have pizzeria details in app.currentPizzeria
+    if (!app.currentPizzeria) return;
+
+    document.getElementById('setting-name').value = app.currentPizzeria.name || '';
+    document.getElementById('setting-address').value = app.currentPizzeria.address || '';
+    document.getElementById('setting-phone').value = app.currentPizzeria.phone || '';
+};
+
+app.saveGeneralSettings = async (event) => {
+    event.preventDefault();
+    const updates = {
+        name: document.getElementById('setting-name').value,
+        address: document.getElementById('setting-address').value,
+        phone: document.getElementById('setting-phone').value
+    };
+
+    const { error } = await supabase
+        .from('pizzerias')
+        .update(updates)
+        .eq('id', app.currentPizzeria.id);
+
+    if (error) {
+        alert('Erreur: ' + error.message);
+    } else {
+        alert('Informations mises à jour !');
+        app.currentPizzeria = { ...app.currentPizzeria, ...updates };
+        document.getElementById('dashboard-pizzeria-name').innerText = updates.name;
+    }
+};
+
+// 2. OPENING HOURS
+app.loadOpeningHours = async () => {
+    const container = document.getElementById('opening-hours-grid');
+    container.innerHTML = '<div class="loading-spinner">Chargement...</div>';
+
+    const { data: hours, error } = await supabase
+        .from('opening_hours')
+        .select('*')
+        .eq('pizzeria_id', app.currentPizzeria.id)
+        .order('day_of_week');
+
+    if (error) {
+        container.innerHTML = '<div class="error">Erreur de chargement</div>';
+        return;
+    }
+
+    const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+    let html = '';
+
+    // Ensure we have entries for all days (create defaults in memory if missing)
+    for (let i = 1; i <= 7; i++) {
+        const dayIndex = i === 7 ? 0 : i; // Start Monday (1), End Sunday (0)
+        // Find existing record or use default
+        const dayRecord = hours ? hours.find(h => h.day_of_week === dayIndex) : null;
+
+        const openTime = dayRecord ? dayRecord.open_time.slice(0, 5) : '11:30';
+        const closeTime = dayRecord ? dayRecord.close_time.slice(0, 5) : '22:30';
+        const isClosed = dayRecord ? dayRecord.is_closed : false;
+
+        html += `
+            <div class="hours-row" data-day="${dayIndex}" data-id="${dayRecord?.id || ''}">
+                <div class="day-label">${days[dayIndex]}</div>
+                <div class="hours-inputs" style="opacity: ${isClosed ? 0.5 : 1}">
+                    <input type="time" value="${openTime}" ${isClosed ? 'disabled' : ''} class="open-input">
+                    <span>à</span>
+                    <input type="time" value="${closeTime}" ${isClosed ? 'disabled' : ''} class="close-input">
+                </div>
+                <div class="closed-toggle">
+                    <label class="switch-label">
+                        <input type="checkbox" onchange="app.toggleDayClosed(this)" ${isClosed ? 'checked' : ''}>
+                        Fermé
+                    </label>
+                </div>
+            </div>
+        `;
+    }
+    container.innerHTML = html;
+};
+
+app.toggleDayClosed = (checkbox) => {
+    const inputs = checkbox.closest('.hours-row').querySelector('.hours-inputs');
+    if (checkbox.checked) {
+        inputs.style.opacity = '0.5';
+        inputs.querySelectorAll('input').forEach(i => i.disabled = true);
+    } else {
+        inputs.style.opacity = '1';
+        inputs.querySelectorAll('input').forEach(i => i.disabled = false);
+    }
+};
+
+app.saveOpeningHours = async () => {
+    const rows = document.querySelectorAll('.hours-row');
+    const updates = [];
+
+    rows.forEach(row => {
+        const id = row.dataset.id; // Empty if new
+        updates.push({
+            pizzeria_id: app.currentPizzeria.id,
+            day_of_week: parseInt(row.dataset.day),
+            open_time: row.querySelector('.open-input').value,
+            close_time: row.querySelector('.close-input').value,
+            is_closed: row.querySelector('input[type="checkbox"]').checked,
+            ...(id && { id: id }) // Include ID if updating
+        });
+    });
+
+    const { error } = await supabase
+        .from('opening_hours')
+        .upsert(updates);
+
+    if (error) alert('Erreur: ' + error.message);
+    else alert('Horaires sauvegardés !');
+
+    // Refresh to get new IDs
+    app.loadOpeningHours();
+};
+
+// 3. DELIVERY ZONES
+app.loadDeliveryZones = async () => {
+    const tbody = document.getElementById('zones-list');
+    tbody.innerHTML = '<tr><td colspan="5">Chargement...</td></tr>';
+
+    const { data: zones, error } = await supabase
+        .from('delivery_zones')
+        .select('*')
+        .eq('pizzeria_id', app.currentPizzeria.id)
+        .order('postal_code');
+
+    if (error) {
+        tbody.innerHTML = '<tr><td colspan="5">Erreur de chargement</td></tr>';
+        return;
+    }
+
+    if (!zones || zones.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center text-muted">Aucune zone configurée. Ajoutez les codes postaux desservis.</td>
+            </tr>`;
+        return;
+    }
+
+    tbody.innerHTML = zones.map(zone => `
+        <tr>
+            <td><strong>${zone.postal_code}</strong></td>
+            <td>${zone.city_name || '-'}</td>
+            <td>${zone.min_order_amount}€</td>
+            <td>${zone.delivery_fee}€</td>
+            <td>
+                <button onclick="app.deleteZone('${zone.id}')" class="btn-icon text-danger">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+};
+
+app.addDeliveryZone = async () => {
+    const postalCode = prompt("Code Postal à desservir (ex: 75011):");
+    if (!postalCode) return;
+
+    const fee = prompt("Frais de livraison pour cette zone (€):", "2.50");
+    const minOrder = prompt("Minimum de commande (€):", "15.00");
+
+    const { error } = await supabase
+        .from('delivery_zones')
+        .insert({
+            pizzeria_id: app.currentPizzeria.id,
+            postal_code: postalCode,
+            min_order_amount: parseFloat(minOrder),
+            delivery_fee: parseFloat(fee)
+        });
+
+    if (error) alert('Erreur: ' + error.message);
+    else app.loadDeliveryZones();
+};
+
+app.deleteZone = async (id) => {
+    if (!confirm('Supprimer cette zone ?')) return;
+    const { error } = await supabase.from('delivery_zones').delete().eq('id', id);
+    if (!error) app.loadDeliveryZones();
+};
+
+// 4. BUSINESS RULES
+app.loadBusinessRules = async () => {
+    if (!app.currentPizzeria) return;
+
+    // Prep time
+    document.getElementById('setting-prep-time').value = app.currentPizzeria.preparation_time_minutes || 20;
+
+    // Free delivery threshold
+    document.getElementById('setting-free-delivery').value = app.currentPizzeria.free_delivery_threshold || '';
+
+    // Custom instructions
+    document.getElementById('setting-custom-instructions').value = app.currentPizzeria.custom_instructions || '';
+
+    // Payment methods
+    const methods = app.currentPizzeria.payment_methods || [];
+    document.querySelectorAll('.payment-checkbox').forEach(cb => {
+        cb.checked = methods.includes(cb.value);
+    });
+};
+
+app.saveBusinessRules = async () => {
+    const methods = Array.from(document.querySelectorAll('.payment-checkbox:checked')).map(cb => cb.value);
+
+    const updates = {
+        preparation_time_minutes: parseInt(document.getElementById('setting-prep-time').value),
+        free_delivery_threshold: parseFloat(document.getElementById('setting-free-delivery').value) || null,
+        custom_instructions: document.getElementById('setting-custom-instructions').value,
+        payment_methods: methods
+    };
+
+    const { error } = await supabase
+        .from('pizzerias')
+        .update(updates)
+        .eq('id', app.currentPizzeria.id);
+
+    if (error) alert('Erreur: ' + error.message);
+    else {
+        alert('Règles mises à jour !');
+        app.currentPizzeria = { ...app.currentPizzeria, ...updates };
+    }
+};
+
+// --- NEW SETTINGS LOGIC END ---
+
+// --- KITCHEN LOAD LOGIC ---
+
+app.toggleKitchenLoad = async () => {
+    const btn = document.getElementById('kitchen-load-btn');
+    const isFire = btn.classList.contains('status-badge-red'); // currently fire
+    
+    // Toggle state locally first for responsiveness
+    const newStatus = isFire ? 'normal' : 'fire';
+    
+    // Optimistic UI update
+    if (newStatus === 'fire') {
+        btn.classList.remove('status-badge-neutral');
+        btn.classList.add('status-badge-red');
+        btn.classList.add('pulse');
+        btn.innerHTML = '<i class="fa-solid fa-fire"></i> Coup de feu ACTIF';
+    } else {
+        btn.classList.remove('status-badge-red');
+        btn.classList.remove('pulse');
+        btn.classList.add('status-badge-neutral');
+        btn.innerHTML = '<i class="fa-solid fa-fire"></i> Coup de feu';
+    }
+
+    // Save to DB
+    const { error } = await supabase
+        .from('pizzerias')
+        .update({ kitchen_load_status: newStatus })
+        .eq('id', app.currentPizzeria.id);
+
+    if (error) {
+        console.error('Error updating kitchen load:', error);
+        // Revert UI if error (optional, but good practice)
+        alert('Erreur de connexion');
+    } else {
+        app.currentPizzeria.kitchen_load_status = newStatus;
+    }
+};
+
+// Check load on init
+app.initKitchenLoadState = () => {
+    if (!app.currentPizzeria) return;
+    const btn = document.getElementById('kitchen-load-btn');
+    if (app.currentPizzeria.kitchen_load_status === 'fire') {
+        btn.classList.remove('status-badge-neutral');
+        btn.classList.add('status-badge-red');
+        btn.classList.add('pulse');
+        btn.innerHTML = '<i class="fa-solid fa-fire"></i> Coup de feu ACTIF';
+    }
+};
+
+// Add to loadDashboard chain
+const originalLoadDashboard = app.loadDashboard;
+app.loadDashboard = async () => {
+    await originalLoadDashboard();
+    app.initKitchenLoadState();
+};

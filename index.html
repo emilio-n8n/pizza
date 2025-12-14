@@ -515,8 +515,16 @@
                             <p id="pizzeria-contact-header"
                                 style="color: #888; font-size: 0.9rem; margin-top: 0.25rem;"></p>
                         </div>
-                        <div class="status-badge-green">
-                            <div class="pulse-dot"></div> Agent Actif
+                        <div class="header-actions" style="display: flex; align-items: center; gap: 1rem;">
+                            <!-- Kitchen Load Toggle -->
+                            <button id="kitchen-load-btn" class="status-badge-neutral"
+                                onclick="app.toggleKitchenLoad()">
+                                <i class="fa-solid fa-fire"></i> Coup de feu
+                            </button>
+
+                            <div class="status-badge-green">
+                                <div class="pulse-dot"></div> Agent Actif
+                            </div>
                         </div>
                     </header>
 
@@ -610,32 +618,163 @@
                     </div>
 
                     <div id="tab-settings" class="dashboard-tab" style="display: none;">
-                        <div class="settings-container">
-                            <h3 class="mb-4"><i class="fa-solid fa-users"></i> Gestion des Livreurs</h3>
-
-                            <div class="settings-card dark-card mb-4">
-                                <h4>Inviter un livreur</h4>
-                                <p class="text-muted text-sm mb-3">Créez un lien d'accès unique pour vos livreurs.</p>
-                                <form onsubmit="app.inviteDriver(event)" class="driver-invite-form">
-                                    <div class="input-group">
-                                        <input type="text" id="driver-name-input" placeholder="Prénom du livreur"
-                                            required class="dark-input">
-                                    </div>
-                                    <div class="input-group">
-                                        <input type="tel" id="driver-phone-input" placeholder="Téléphone (optionnel)"
-                                            class="dark-input">
-                                    </div>
-                                    <button type="submit" class="btn-primary mt-2">
-                                        <i class="fa-solid fa-plus"></i> Créer l'accès
-                                    </button>
-                                </form>
+                        <div class="settings-layout">
+                            <!-- Settings Sidebar -->
+                            <div class="settings-sidebar">
+                                <button class="settings-nav-btn active" onclick="app.switchSettingsSection('general')">
+                                    <i class="fa-solid fa-store"></i> Général
+                                </button>
+                                <button class="settings-nav-btn" onclick="app.switchSettingsSection('hours')">
+                                    <i class="fa-solid fa-clock"></i> Horaires
+                                </button>
+                                <button class="settings-nav-btn" onclick="app.switchSettingsSection('zones')">
+                                    <i class="fa-solid fa-map-location-dot"></i> Livraison
+                                </button>
+                                <button class="settings-nav-btn" onclick="app.switchSettingsSection('rules')">
+                                    <i class="fa-solid fa-sliders"></i> Règles & IA
+                                </button>
+                                <button class="settings-nav-btn" onclick="app.switchSettingsSection('drivers')">
+                                    <i class="fa-solid fa-users"></i> Livreurs
+                                </button>
                             </div>
 
-                            <div class="settings-card dark-card">
-                                <h4>Livreurs actifs</h4>
-                                <div id="drivers-list" class="drivers-list-container">
-                                    <div class="empty-state text-sm">Chargement...</div>
+                            <!-- Settings Content -->
+                            <div class="settings-content-area">
+
+                                <!-- 1. General Info -->
+                                <div id="settings-section-general" class="settings-section active">
+                                    <h3>Informations Restaurant</h3>
+                                    <form onsubmit="app.saveGeneralSettings(event)">
+                                        <div class="input-group dark">
+                                            <label>Nom de la Pizzeria</label>
+                                            <input type="text" id="setting-name" class="dark-input">
+                                        </div>
+                                        <div class="input-group dark">
+                                            <label>Adresse</label>
+                                            <input type="text" id="setting-address" class="dark-input">
+                                        </div>
+                                        <div class="input-group dark">
+                                            <label>Téléphone Contact</label>
+                                            <input type="tel" id="setting-phone" class="dark-input">
+                                        </div>
+                                        <button type="submit" class="btn-primary">Enregistrer</button>
+                                    </form>
                                 </div>
+
+                                <!-- 2. Opening Hours -->
+                                <div id="settings-section-hours" class="settings-section" style="display: none;">
+                                    <div class="section-header">
+                                        <h3>Horaires d'ouverture</h3>
+                                        <p class="text-sm text-muted">L'agent ne prendra pas de commandes en dehors de
+                                            ces heures.</p>
+                                    </div>
+                                    <div id="opening-hours-grid" class="opening-hours-grid">
+                                        <!-- Injected by JS -->
+                                        <div class="loading-spinner">Chargement...</div>
+                                    </div>
+                                    <button onclick="app.saveOpeningHours()" class="btn-primary mt-3">Sauvegarder les
+                                        horaires</button>
+                                </div>
+
+                                <!-- 3. Delivery Zones -->
+                                <div id="settings-section-zones" class="settings-section" style="display: none;">
+                                    <div class="section-header">
+                                        <h3>Zones de Livraison</h3>
+                                        <button onclick="app.addDeliveryZone()" class="btn-secondary btn-sm"><i
+                                                class="fa-solid fa-plus"></i> Ajouter une zone</button>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="dark-table" id="zones-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Code Postal</th>
+                                                    <th>Ville</th>
+                                                    <th>Min. Commande</th>
+                                                    <th>Frais</th>
+                                                    <th>Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="zones-list">
+                                                <!-- Injected by JS -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <!-- 4. Business Rules & AI -->
+                                <div id="settings-section-rules" class="settings-section" style="display: none;">
+                                    <h3>Règles Métier</h3>
+
+                                    <div class="settings-card dark-card mb-4">
+                                        <h4><i class="fa-solid fa-credit-card"></i> Paiements acceptés</h4>
+                                        <div class="checkbox-group" id="payment-methods-container">
+                                            <label class="checkbox-label">
+                                                <input type="checkbox" value="cash" class="payment-checkbox"> Espèces
+                                            </label>
+                                            <label class="checkbox-label">
+                                                <input type="checkbox" value="card_delivery" class="payment-checkbox">
+                                                CB Livraison
+                                            </label>
+                                            <label class="checkbox-label">
+                                                <input type="checkbox" value="ticket_resto" class="payment-checkbox">
+                                                Tickets Resto
+                                            </label>
+                                            <label class="checkbox-label">
+                                                <input type="checkbox" value="online" class="payment-checkbox"> Paiement
+                                                en ligne
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="settings-card dark-card mb-4">
+                                        <h4><i class="fa-solid fa-stopwatch"></i> Temps & Délais</h4>
+                                        <div class="input-group dark">
+                                            <label>Temps préparation standard (min)</label>
+                                            <input type="number" id="setting-prep-time" class="dark-input" value="20">
+                                        </div>
+                                        <div class="input-group dark">
+                                            <label>Seuil Livraison Gratuite (€)</label>
+                                            <input type="number" id="setting-free-delivery" class="dark-input"
+                                                placeholder="Ex: 30">
+                                        </div>
+                                    </div>
+
+                                    <div class="settings-card dark-card mb-4">
+                                        <h4><i class="fa-solid fa-robot"></i> Instructions IA</h4>
+                                        <div class="input-group dark">
+                                            <label>L'agent doit savoir quelque chose de spécial ?</label>
+                                            <textarea id="setting-custom-instructions" class="dark-input" rows="3"
+                                                placeholder="Ex: Le digicode est 1234, Ne pas prendre de commandes de pizzas 'Ananas'..."></textarea>
+                                        </div>
+                                    </div>
+
+                                    <button onclick="app.saveBusinessRules()" class="btn-primary">Enregistrer les
+                                        règles</button>
+                                </div>
+
+                                <!-- 5. Drivers (moved here) -->
+                                <div id="settings-section-drivers" class="settings-section" style="display: none;">
+                                    <h3>Gestion des Livreurs</h3>
+                                    <!-- Existing drivers content -->
+                                    <div class="settings-card dark-card mb-4">
+                                        <h4>Inviter un livreur</h4>
+                                        <form onsubmit="app.inviteDriver(event)" class="driver-invite-form">
+                                            <div class="input-group">
+                                                <input type="text" id="driver-name-input" placeholder="Prénom" required
+                                                    class="dark-input">
+                                            </div>
+                                            <div class="input-group">
+                                                <input type="tel" id="driver-phone-input" placeholder="Téléphone"
+                                                    class="dark-input">
+                                            </div>
+                                            <button type="submit" class="btn-primary mt-2">Ajouter</button>
+                                        </form>
+                                    </div>
+                                    <div class="settings-card dark-card">
+                                        <div id="drivers-list" class="drivers-list-container"></div>
+                                    </div>
+                                </div>
+
                             </div>
                         </div>
                     </div>
