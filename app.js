@@ -1933,24 +1933,33 @@ app.loadBusinessRules = async () => {
 };
 
 app.saveBusinessRules = async () => {
-    const methods = Array.from(document.querySelectorAll('.payment-checkbox:checked')).map(cb => cb.value);
+    try {
+        const methods = Array.from(document.querySelectorAll('.payment-checkbox:checked')).map(cb => cb.value);
 
-    const updates = {
-        preparation_time_minutes: parseInt(document.getElementById('setting-prep-time').value),
-        free_delivery_threshold: parseFloat(document.getElementById('setting-free-delivery').value) || null,
-        custom_instructions: document.getElementById('setting-custom-instructions').value,
-        payment_methods: methods
-    };
+        const updates = {
+            preparation_time_minutes: parseInt(document.getElementById('setting-prep-time').value) || 20,
+            free_delivery_threshold: parseFloat(document.getElementById('setting-free-delivery').value) || null,
+            custom_instructions: document.getElementById('setting-custom-instructions').value || null,
+            payment_methods: methods
+        };
 
-    const { error } = await supabase
-        .from('pizzerias')
-        .update(updates)
-        .eq('id', app.currentPizzeria.id);
+        const { data, error } = await supabase
+            .from('pizzerias')
+            .update(updates)
+            .eq('id', app.currentPizzeria.id)
+            .select()
+            .single();
 
-    if (error) alert('Erreur: ' + error.message);
-    else {
-        alert('Règles mises à jour !');
-        app.currentPizzeria = { ...app.currentPizzeria, ...updates };
+        if (error) throw error;
+
+        if (!data) throw new Error("Mise à jour échouée (Pas de données retournées)");
+
+        app.currentPizzeria = data; // Update with confirmed DB data
+        alert('Règles sauvegardées avec succès !');
+
+    } catch (err) {
+        console.error('Error saving rules:', err);
+        alert('Erreur lors de la sauvegarde : ' + err.message);
     }
 };
 
