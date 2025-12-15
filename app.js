@@ -590,6 +590,9 @@ const app = {
             return;
         }
 
+        // Store in global state
+        app.currentPizzeria = pizzeria;
+
         document.getElementById('dash-title').innerText = `Commandes - ${pizzeria.name}`;
 
         // Afficher les infos de contact
@@ -1708,7 +1711,7 @@ app.loadGeneralSettings = async () => {
 
     document.getElementById('setting-name').value = app.currentPizzeria.name || '';
     document.getElementById('setting-address').value = app.currentPizzeria.address || '';
-    document.getElementById('setting-phone').value = app.currentPizzeria.phone || '';
+    document.getElementById('setting-phone').value = app.currentPizzeria.contact_phone || ''; // Updated to contact_phone
 };
 
 app.saveGeneralSettings = async (event) => {
@@ -1716,7 +1719,7 @@ app.saveGeneralSettings = async (event) => {
     const updates = {
         name: document.getElementById('setting-name').value,
         address: document.getElementById('setting-address').value,
-        phone: document.getElementById('setting-phone').value
+        contact_phone: document.getElementById('setting-phone').value // Updated to contact_phone
     };
 
     const { error } = await supabase
@@ -1736,33 +1739,39 @@ app.saveGeneralSettings = async (event) => {
 // 2. OPENING HOURS
 app.loadOpeningHours = async () => {
     const container = document.getElementById('opening-hours-grid');
+    if (!container) return;
+
     container.innerHTML = '<div class="loading-spinner">Chargement...</div>';
 
-    const { data: hours, error } = await supabase
-        .from('opening_hours')
-        .select('*')
-        .eq('pizzeria_id', app.currentPizzeria.id)
-        .order('day_of_week');
-
-    if (error) {
-        container.innerHTML = '<div class="error">Erreur de chargement</div>';
+    if (!app.currentPizzeria) {
+        console.warn('No current pizzeria for loading hours');
+        container.innerHTML = '<div class="error">Erreur: Pizzeria non identifiée.</div>';
         return;
     }
 
-    const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
-    let html = '';
+    try {
+        const { data: hours, error } = await supabase
+            .from('opening_hours')
+            .select('*')
+            .eq('pizzeria_id', app.currentPizzeria.id)
+            .order('day_of_week');
 
-    // Ensure we have entries for all days (create defaults in memory if missing)
-    for (let i = 1; i <= 7; i++) {
-        const dayIndex = i === 7 ? 0 : i; // Start Monday (1), End Sunday (0)
-        // Find existing record or use default
-        const dayRecord = hours ? hours.find(h => h.day_of_week === dayIndex) : null;
+        if (error) throw error;
 
-        const openTime = dayRecord ? dayRecord.open_time.slice(0, 5) : '11:30';
-        const closeTime = dayRecord ? dayRecord.close_time.slice(0, 5) : '22:30';
-        const isClosed = dayRecord ? dayRecord.is_closed : false;
+        const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+        let html = '';
 
-        html += `
+        // Ensure we have entries for all days (create defaults in memory if missing)
+        for (let i = 1; i <= 7; i++) {
+            const dayIndex = i === 7 ? 0 : i; // Start Monday (1), End Sunday (0)
+            // Find existing record or use default
+            const dayRecord = hours ? hours.find(h => h.day_of_week === dayIndex) : null;
+
+            const openTime = dayRecord ? dayRecord.open_time.slice(0, 5) : '11:30';
+            const closeTime = dayRecord ? dayRecord.close_time.slice(0, 5) : '22:30';
+            const isClosed = dayRecord ? dayRecord.is_closed : false;
+
+            html += `
             <div class="hours-row" data-day="${dayIndex}" data-id="${dayRecord?.id || ''}">
                 <div class="day-label">${days[dayIndex]}</div>
                 <div class="hours-inputs" style="opacity: ${isClosed ? 0.5 : 1}">
@@ -1778,8 +1787,12 @@ app.loadOpeningHours = async () => {
                 </div>
             </div>
         `;
+        }
+        container.innerHTML = html;
+    } catch (err) {
+        console.error('Error loading hours:', err);
+        container.innerHTML = '<div class="error">Erreur de chargement des horaires</div>';
     }
-    container.innerHTML = html;
 };
 
 app.toggleDayClosed = (checkbox) => {
@@ -1823,43 +1836,53 @@ app.saveOpeningHours = async () => {
 // 3. DELIVERY ZONES
 app.loadDeliveryZones = async () => {
     const tbody = document.getElementById('zones-list');
+    if (!tbody) return;
+
     tbody.innerHTML = '<tr><td colspan="5">Chargement...</td></tr>';
 
-    const { data: zones, error } = await supabase
-        .from('delivery_zones')
-        .select('*')
-        .eq('pizzeria_id', app.currentPizzeria.id)
-        .order('postal_code');
-
-    if (error) {
-        tbody.innerHTML = '<tr><td colspan="5">Erreur de chargement</td></tr>';
+    if (!app.currentPizzeria) {
+        tbody.innerHTML = '<tr><td colspan="5">Erreur: Pizzeria non identifiée.</td></tr>';
         return;
     }
 
-    if (!zones || zones.length === 0) {
-        tbody.innerHTML = `
+    try {
+        const { data: zones, error } = await supabase
+            .from('delivery_zones')
+            .select('*')
+            .eq('pizzeria_id', app.currentPizzeria.id)
+            .order('postal_code');
+
+        if (error) throw error;
+
+        if (!zones || zones.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center text-muted">Aucune zone configurée. Ajoutez les codes postaux desservis.</td>
+                </tr>`;
+            return;
+        }
+
+        tbody.innerHTML = zones.map(zone => `
             <tr>
-                <td colspan="5" class="text-center text-muted">Aucune zone configurée. Ajoutez les codes postaux desservis.</td>
-            </tr>`;
-        return;
+                <td><strong>${zone.postal_code}</strong></td>
+                <td>${zone.city_name || '-'}</td>
+                <td>${zone.min_order_amount}€</td>
+                <td>${zone.delivery_fee}€</td>
+                <td>
+                    <button onclick="app.deleteZone('${zone.id}')" class="btn-icon text-danger">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (err) {
+        console.error('Error loading zones:', err);
+        tbody.innerHTML = '<tr><td colspan="5">Erreur de chargement.</td></tr>';
     }
-
-    tbody.innerHTML = zones.map(zone => `
-        <tr>
-            <td><strong>${zone.postal_code}</strong></td>
-            <td>${zone.city_name || '-'}</td>
-            <td>${zone.min_order_amount}€</td>
-            <td>${zone.delivery_fee}€</td>
-            <td>
-                <button onclick="app.deleteZone('${zone.id}')" class="btn-icon text-danger">
-                    <i class="fa-solid fa-trash"></i>
-                </button>
-            </td>
-        </tr>
-    `).join('');
 };
 
 app.addDeliveryZone = async () => {
+    if (!app.currentPizzeria) return alert('Erreur: Pizzeria non identifiée.');
     const postalCode = prompt("Code Postal à desservir (ex: 75011):");
     if (!postalCode) return;
 
@@ -1889,20 +1912,24 @@ app.deleteZone = async (id) => {
 app.loadBusinessRules = async () => {
     if (!app.currentPizzeria) return;
 
-    // Prep time
-    document.getElementById('setting-prep-time').value = app.currentPizzeria.preparation_time_minutes || 20;
+    try {
+        // Prep time
+        document.getElementById('setting-prep-time').value = app.currentPizzeria.preparation_time_minutes || 20;
 
-    // Free delivery threshold
-    document.getElementById('setting-free-delivery').value = app.currentPizzeria.free_delivery_threshold || '';
+        // Free delivery threshold
+        document.getElementById('setting-free-delivery').value = app.currentPizzeria.free_delivery_threshold || '';
 
-    // Custom instructions
-    document.getElementById('setting-custom-instructions').value = app.currentPizzeria.custom_instructions || '';
+        // Custom instructions
+        document.getElementById('setting-custom-instructions').value = app.currentPizzeria.custom_instructions || '';
 
-    // Payment methods
-    const methods = app.currentPizzeria.payment_methods || [];
-    document.querySelectorAll('.payment-checkbox').forEach(cb => {
-        cb.checked = methods.includes(cb.value);
-    });
+        // Payment methods
+        const methods = app.currentPizzeria.payment_methods || [];
+        document.querySelectorAll('.payment-checkbox').forEach(cb => {
+            cb.checked = methods.includes(cb.value);
+        });
+    } catch (err) {
+        console.error('Error loading rules:', err);
+    }
 };
 
 app.saveBusinessRules = async () => {
