@@ -2210,3 +2210,8 @@ app.toggleModifierAvailability = async (id, isAvailable) => {
 };
 
 // --- MODIFIERS LOGIC END ---
+
+// Initialisation au chargement de la page
+document.addEventListener('DOMContentLoaded', () => {
+    app.init();
+});
