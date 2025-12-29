@@ -794,7 +794,11 @@ const app = {
         document.getElementById('modal-pizzeria-name').innerText = pizzeria.name;
         document.getElementById('modal-id').innerText = pizzeria.id;
         document.getElementById('modal-email').innerText = pizzeria.user_email || 'Non renseigné';
-        document.getElementById('modal-phone').innerText = pizzeria.contact_phone || 'Non renseigné';
+
+        // Highlight Agent Number if exists
+        const agentNum = pizzeria.phone_number || 'Non activé';
+        const contactNum = pizzeria.contact_phone || 'Non renseigné';
+        document.getElementById('modal-phone').innerHTML = `${contactNum} <br> <small style="color:var(--primary)">Agent IA: ${agentNum}</small>`;
         document.getElementById('modal-address').innerText = pizzeria.address || 'Non renseigné';
         document.getElementById('modal-created').innerText = new Date(pizzeria.created_at).toLocaleDateString('fr-FR');
 
@@ -954,48 +958,72 @@ const app = {
         const user = app.state.session?.user;
         if (!user) return;
 
-        const { data: pizzeria, error } = await supabaseClient
+        // Fetch the most recent pizzeria for this user
+        const { data: pizzerias, error } = await supabaseClient
             .from('pizzerias')
-            .select('phone_number')
+            .select('name, phone_number')
             .eq('user_id', user.id)
-            .single();
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+        const codesContainer = document.getElementById('operator-codes');
+        const numberTextDisplay = document.querySelector('.number-text');
+        const copyBtn = document.querySelector('.number-display-premium');
+
+        if (error) {
+            console.error('Error loading call forwarding:', error);
+            if (codesContainer) codesContainer.innerHTML = '<p class="text-error">Erreur de chargement des paramètres.</p>';
+            return;
+        }
+
+        const pizzeria = pizzerias && pizzerias[0];
 
         if (pizzeria && pizzeria.phone_number) {
-            const phoneNumber = pizzeria.phone_number;
+            const phoneNumber = pizzeria.phone_number.replace(/\s/g, ''); // Clean number
 
             // Update display
-            const numberDisplay = document.querySelector('.number-text');
-            if (numberDisplay) numberDisplay.innerText = phoneNumber.match(/.{1,2}/g).join(' ');
+            if (numberTextDisplay) {
+                numberTextDisplay.innerText = phoneNumber.match(/.{1,2}/g).join(' ');
+            }
 
             // Update Operator Codes
-            const codesContainer = document.getElementById('operator-codes');
             if (codesContainer) {
                 codesContainer.innerHTML = `
-                    <div class="operator-item">
-                        <span class="operator-name">Orange / Sosh</span>
-                        <code class="code-snippet">**21*${phoneNumber}#</code>
-                    </div>
-                    <div class="operator-item">
-                        <span class="operator-name">SFR / Red</span>
-                        <code class="code-snippet">*21*${phoneNumber}#</code>
-                    </div>
-                    <div class="operator-item">
-                        <span class="operator-name">Bouygues</span>
-                        <code class="code-snippet">*61*${phoneNumber}#</code>
-                    </div>
-                    <div class="operator-item">
-                        <span class="operator-name">Free</span>
-                        <code class="code-snippet">*21*${phoneNumber}#</code>
-                    </div>
-                    <p class="text-xs text-muted mt-2">Appuyez sur la touche appel après avoir composé le code.</p>
-                `;
+                <div class="operator-item">
+                    <span class="operator-name">Orange / Sosh</span>
+                    <code class="code-snippet">**21*${phoneNumber}#</code>
+                </div>
+                <div class="operator-item">
+                    <span class="operator-name">SFR / Red</span>
+                    <code class="code-snippet">*21*${phoneNumber}#</code>
+                </div>
+                <div class="operator-item">
+                    <span class="operator-name">Bouygues</span>
+                    <code class="code-snippet">*61*${phoneNumber}#</code>
+                </div>
+                <div class="operator-item">
+                    <span class="operator-name">Free</span>
+                    <code class="code-snippet">*21*${phoneNumber}#</code>
+                </div>
+                <p class="text-xs text-muted mt-2">Appuyez sur la touche appel après avoir composé le code.</p>
+            `;
             }
 
             // Update copy button behavior
-            const copyBtn = document.querySelector('.number-display-premium');
             if (copyBtn) {
                 copyBtn.onclick = () => app.copyToClipboard(phoneNumber);
             }
+        } else {
+            // Number not yet set (Status Pending)
+            if (numberTextDisplay) numberTextDisplay.innerText = "En attente...";
+            if (codesContainer) {
+                codesContainer.innerHTML = `
+                <div class="info-box warning">
+                    <p><i class="fa-solid fa-clock"></i> <strong>Patience !</strong> Vos codes de transfert seront disponibles ici dès que votre numéro sera activé par nos experts (sous 24h).</p>
+                </div>
+            `;
+            }
+            if (copyBtn) copyBtn.onclick = null;
         }
     },
 
