@@ -8,41 +8,34 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-    if (req.method === 'OPTIONS') {
-        return new Response('ok', { headers: corsHeaders })
-    }
+    if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
     try {
-        const supabase = createClient(
-            Deno.env.get('SUPABASE_URL') ?? '',
-            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-        )
+        const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '')
 
-        const { pizzeria_id, postal_code } = await req.json()
-        if (!pizzeria_id) throw new Error('pizzeria_id is required')
+        const url = new URL(req.url)
+        let pizzeria_id = url.searchParams.get('pizzeria_id')
+        let postal_code = url.searchParams.get('postal_code')
 
-        let query = supabase
-            .from('delivery_zones')
-            .select('*')
-            .eq('pizzeria_id', pizzeria_id)
-
-        // Optional: Filter by specific postal code if provided
-        if (postal_code) {
-            query = query.eq('postal_code', postal_code)
+        const bodyText = await req.text()
+        if (bodyText) {
+            try {
+                const body = JSON.parse(bodyText)
+                pizzeria_id = pizzeria_id || body.pizzeria_id || body.args?.pizzeria_id || body.arguments?.pizzeria_id
+                postal_code = postal_code || body.postal_code || body.args?.postal_code || body.arguments?.postal_code
+            } catch (e) { }
         }
 
-        const { data, error } = await query
+        if (!pizzeria_id) throw new Error('pizzeria_id is required')
 
+        let query = supabase.from('delivery_zones').select('*').eq('pizzeria_id', pizzeria_id)
+        if (postal_code) query = query.eq('postal_code', postal_code)
+
+        const { data, error } = await query
         if (error) throw error
 
-        return new Response(
-            JSON.stringify(data),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
+        return new Response(JSON.stringify(data), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     } catch (error) {
-        return new Response(
-            JSON.stringify({ error: error.message }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-        )
+        return new Response(JSON.stringify({ error: error.message }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 })
     }
 })

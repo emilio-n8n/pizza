@@ -8,43 +8,34 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-    if (req.method === 'OPTIONS') {
-        return new Response('ok', { headers: corsHeaders })
-    }
+    if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
     try {
-        const supabase = createClient(
-            Deno.env.get('SUPABASE_URL') ?? '',
-            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-        )
+        const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '')
 
-        const { pizzeria_id, category } = await req.json()
-        if (!pizzeria_id) throw new Error('pizzeria_id is required')
+        const url = new URL(req.url)
+        let pizzeria_id = url.searchParams.get('pizzeria_id')
+        let category = url.searchParams.get('category')
 
-        let query = supabase
-            .from('product_modifiers')
-            .select('*')
-            .eq('pizzeria_id', pizzeria_id)
-            .eq('available', true)
-            .order('category')
-            .order('name')
-
-        if (category) {
-            query = query.eq('category', category)
+        const bodyText = await req.text()
+        if (bodyText) {
+            try {
+                const body = JSON.parse(bodyText)
+                pizzeria_id = pizzeria_id || body.pizzeria_id || body.args?.pizzeria_id || body.arguments?.pizzeria_id
+                category = category || body.category || body.args?.category || body.arguments?.category
+            } catch (e) { }
         }
 
-        const { data: modifiers, error } = await query
+        if (!pizzeria_id) throw new Error('pizzeria_id is required')
 
+        let query = supabase.from('product_modifiers').select('*').eq('pizzeria_id', pizzeria_id).eq('available', true).order('category').order('name')
+        if (category) query = query.eq('category', category)
+
+        const { data: modifiers, error } = await query
         if (error) throw error
 
-        return new Response(
-            JSON.stringify(modifiers),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
+        return new Response(JSON.stringify(modifiers), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     } catch (error) {
-        return new Response(
-            JSON.stringify({ error: error.message }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-        )
+        return new Response(JSON.stringify({ error: error.message }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 })
     }
 })

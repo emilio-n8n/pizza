@@ -8,41 +8,34 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-    if (req.method === 'OPTIONS') {
-        return new Response('ok', { headers: corsHeaders })
-    }
+    if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
     try {
-        const supabase = createClient(
-            Deno.env.get('SUPABASE_URL') ?? '',
-            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-        )
+        const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '')
 
-        const { pizzeria_id } = await req.json()
+        const url = new URL(req.url)
+        let pizzeria_id = url.searchParams.get('pizzeria_id')
+
+        const bodyText = await req.text()
+        if (bodyText) {
+            try {
+                const body = JSON.parse(bodyText)
+                pizzeria_id = pizzeria_id || body.pizzeria_id || body.args?.pizzeria_id || body.arguments?.pizzeria_id
+            } catch (e) { }
+        }
+
         if (!pizzeria_id) throw new Error('pizzeria_id is required')
 
         const { data: pizzeria, error } = await supabase
             .from('pizzerias')
-            .select(`
-            payment_methods,
-            preparation_time_minutes,
-            free_delivery_threshold,
-            custom_instructions,
-            kitchen_load_status
-        `)
+            .select('payment_methods, preparation_time_minutes, free_delivery_threshold, custom_instructions, kitchen_load_status')
             .eq('id', pizzeria_id)
             .single()
 
         if (error) throw error
 
-        return new Response(
-            JSON.stringify(pizzeria),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
+        return new Response(JSON.stringify(pizzeria), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     } catch (error) {
-        return new Response(
-            JSON.stringify({ error: error.message }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-        )
+        return new Response(JSON.stringify({ error: error.message }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 })
     }
 })
