@@ -8,38 +8,28 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-    if (req.method === 'OPTIONS') {
-        return new Response('ok', { headers: corsHeaders })
-    }
+    if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
     try {
-        // Log the request for debugging
-        console.log('Request method:', req.method);
-        console.log('Request headers:', Object.fromEntries(req.headers.entries()));
-
         const supabaseClient = createClient(
             Deno.env.get('SUPABASE_URL') ?? '',
             Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
         )
 
-        let body;
+        let body = {};
         try {
             const text = await req.text();
-            console.log('Request body (raw):', text);
-            body = text ? JSON.parse(text) : {};
-        } catch (parseError) {
-            console.error('JSON parse error:', parseError);
-            throw new Error('Invalid JSON in request body');
-        }
+            if (text) {
+                const parsed = JSON.parse(text);
+                body = parsed.args || parsed.arguments || parsed;
+            }
+        } catch { }
 
-        const { pizzeria_id, category } = body;
-        console.log('Parsed params:', { pizzeria_id, category });
+        const pizzeria_id = body.pizzeria_id || new URL(req.url).searchParams.get('pizzeria_id');
 
-        if (!pizzeria_id) {
-            throw new Error('pizzeria_id is required')
-        }
+        if (!pizzeria_id) throw new Error('pizzeria_id is required')
 
-        // 1. Fetch Basic Pizzeria Info & Rules
+        // Fetch Pizzeria Info
         const { data: pizzeria, error: storeError } = await supabaseClient
             .from('pizzerias')
             .select('*')
@@ -48,44 +38,17 @@ serve(async (req) => {
 
         if (storeError) throw storeError;
 
-        // 2. Fetch Opening Hours
-        const { data: hours, error: hoursError } = await supabaseClient
-            .from('opening_hours')
-            .select('*')
-            .eq('pizzeria_id', pizzeria_id)
-            .order('day_of_week');
-
-        if (hoursError) throw hoursError;
-
-        // 3. Fetch Delivery Zones
-        const { data: zones, error: zonesError } = await supabaseClient
-            .from('delivery_zones')
-            .select('*')
-            .eq('pizzeria_id', pizzeria_id);
-
-        if (zonesError) throw zonesError;
-
-        // 4. Fetch Menu Items (Enhanced with availability check)
-        let menuQuery = supabaseClient
+        // Fetch Menu Items
+        const { data: menuItems, error: menuError } = await supabaseClient
             .from('menu_items')
             .select('*')
             .eq('pizzeria_id', pizzeria_id)
             .eq('available', true)
-            .order('category', { ascending: true })
-            .order('display_order', { ascending: true });
+            .order('category');
 
-        if (category && category !== 'all') {
-            menuQuery = menuQuery.eq('category', category);
-        }
+        if (menuError) throw menuError;
 
-        const { data: menuItems, error: menuError } = await menuQuery;
-
-        if (menuError) {
-            console.error('Database error:', menuError);
-            throw menuError;
-        }
-
-        // 5. Fetch Modifiers
+        // Fetch Modifiers
         const { data: modifiers, error: modError } = await supabaseClient
             .from('product_modifiers')
             .select('*')
@@ -94,21 +57,6 @@ serve(async (req) => {
 
         if (modError) throw modError;
 
-
-        // --- Format Response for Agent ---
-
-        // Format Hours
-        const daysMap = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
-        const formattedHours = hours.map(h => {
-            if (h.is_closed) return `${daysMap[h.day_of_week]}: Fermé`;
-            return `${daysMap[h.day_of_week]}: ${h.open_time.slice(0, 5)} - ${h.close_time.slice(0, 5)}`;
-        });
-
-        // Format Zones
-        const formattedZones = zones.map(z =>
-            `${z.postal_code} (${z.city_name || ''}) - Min: ${z.min_order_amount}€, Frais: ${z.delivery_fee}€`
-        );
-
         // Format Menu
         const formattedMenu = {};
         const categories = ['pizza', 'entree', 'boisson', 'dessert', 'accompagnement', 'autre'];
@@ -116,51 +64,32 @@ serve(async (req) => {
             const items = menuItems.filter(item => item.category === cat);
             if (items.length > 0) {
                 formattedMenu[cat] = items.map(item => {
-                    let itemStr = item.name;
-                    if (item.description && item.description.trim()) itemStr += ` (${item.description})`;
-                    if (item.size) itemStr += ` [${item.size}]`;
-                    itemStr += `: ${item.price}€`;
-                    return itemStr;
+                    let s = item.name;
+                    if (item.description) s += ` (${item.description})`;
+                    if (item.size) s += ` [${item.size}]`;
+                    s += `: ${item.price}€`;
+                    return s;
                 });
             }
         });
 
-        // Construct Final Payload
         const agentContext = {
             restaurant: {
                 name: pizzeria.name,
-                phone: pizzeria.phone,
                 address: pizzeria.address,
+                phone: pizzeria.contact_phone || pizzeria.phone,
                 payment_methods: pizzeria.payment_methods,
-                preparation_time: pizzeria.preparation_time_minutes + " min",
-                kitchen_status: pizzeria.kitchen_load_status, // normal, busy, fire
+                preparation_time: `${pizzeria.preparation_time_minutes || 20} min`,
+                delivery_rules: pizzeria.delivery_rules,
                 special_instructions: pizzeria.custom_instructions
             },
-            opening_hours: formattedHours,
-            delivery_zones: formattedZones,
             menu: formattedMenu,
-            modifiers: modifiers.map(m => `${m.name} (${m.category}): +${m.price_extra}€`),
-            rules: {
-                free_delivery_above: pizzeria.free_delivery_threshold ? `${pizzeria.free_delivery_threshold}€` : "Non",
-                min_delivery_order: pizzeria.min_order_delivery ? `${pizzeria.min_order_delivery}€` : "0€"
-            }
+            modifiers: modifiers.map(m => `${m.name} (${m.category}): +${m.price_extra}€`)
         };
 
-        console.log('Returning rich context to agent');
-
-        return new Response(
-            JSON.stringify(agentContext),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
+        return new Response(JSON.stringify(agentContext), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
     } catch (error) {
-        console.error('Error in get-menu-for-agent:', error);
-        return new Response(
-            JSON.stringify({ error: error.message }),
-            {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                status: 400
-            }
-        )
+        return new Response(JSON.stringify({ error: error.message }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 })

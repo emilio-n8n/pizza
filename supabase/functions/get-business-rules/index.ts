@@ -28,7 +28,7 @@ serve(async (req) => {
 
         const { data: pizzeria, error } = await supabase
             .from('pizzerias')
-            .select('payment_methods, preparation_time_minutes, free_delivery_threshold, custom_instructions, kitchen_load_status')
+            .select('payment_methods, preparation_time_minutes, delivery_rules, custom_instructions, kitchen_load_status')
             .eq('id', pizzeria_id)
             .single()
 

@@ -683,30 +683,23 @@
                                         horaires</button>
                                 </div>
 
-                                <!-- 3. Delivery Zones -->
-                                <div id="settings-section-zones" class="settings-section" style="display: none;">
-                                    <div class="section-header">
-                                        <h3>Zones de Livraison</h3>
-                                        <button onclick="app.addDeliveryZone()" class="btn-secondary btn-sm"><i
-                                                class="fa-solid fa-plus"></i> Ajouter une zone</button>
-                                    </div>
-                                    <div class="table-responsive">
-                                        <table class="dark-table" id="zones-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Code Postal</th>
-                                                    <th>Ville</th>
-                                                    <th>Min. Commande</th>
-                                                    <th>Frais</th>
-                                                    <th>Action</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="zones-list">
-                                                <!-- Injected by JS -->
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
+                                 <!-- 3. Delivery (Natural Language IA) -->
+                                 <div id="settings-section-zones" class="settings-section" style="display: none;">
+                                     <div class="section-header">
+                                         <h3>Règles de Livraison (IA)</h3>
+                                         <p class="text-sm text-muted">Expliquez ici vos zones et tarifs en langage naturel. Sophie l'IA les appliquera.</p>
+                                     </div>
+                                     <div class="settings-card dark-card">
+                                         <div class="input-group dark">
+                                             <label>Décrivez vos conditions de livraison</label>
+                                             <textarea id="setting-delivery-rules-text" class="dark-input" rows="8"
+                                                 placeholder="Ex: Nous livrons dans le 15ème arrondissement.
+Min commande: 15€. Frais: 2.50€. Gratuit dès 30€.
+Pour le 14ème: Min 20€..."></textarea>
+                                         </div>
+                                         <button onclick="app.saveBusinessRules()" class="btn-primary mt-2">Enregistrer les conditions</button>
+                                     </div>
+                                 </div>
 
                                 <!-- 4. Business Rules & AI -->
                                 <div id="settings-section-rules" class="settings-section" style="display: none;">
@@ -733,18 +726,13 @@
                                         </div>
                                     </div>
 
-                                    <div class="settings-card dark-card mb-4">
-                                        <h4><i class="fa-solid fa-stopwatch"></i> Temps & Délais</h4>
-                                        <div class="input-group dark">
-                                            <label>Temps préparation standard (min)</label>
-                                            <input type="number" id="setting-prep-time" class="dark-input" value="20">
-                                        </div>
-                                        <div class="input-group dark">
-                                            <label>Seuil Livraison Gratuite (€)</label>
-                                            <input type="number" id="setting-free-delivery" class="dark-input"
-                                                placeholder="Ex: 30">
-                                        </div>
-                                    </div>
+                                     <div class="settings-card dark-card mb-4">
+                                         <h4><i class="fa-solid fa-stopwatch"></i> Temps & Délais</h4>
+                                         <div class="input-group dark">
+                                             <label>Temps préparation standard (min)</label>
+                                             <input type="number" id="setting-prep-time" class="dark-input" value="20">
+                                         </div>
+                                     </div>
 
                                     <div class="settings-card dark-card mb-4">
                                         <h4><i class="fa-solid fa-robot"></i> Instructions IA</h4>

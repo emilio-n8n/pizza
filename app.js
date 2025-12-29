@@ -1699,7 +1699,8 @@ app.switchSettingsSection = (sectionId) => {
     // 3. Load specific data if needed
     if (sectionId === 'general') app.loadGeneralSettings();
     if (sectionId === 'hours') app.loadOpeningHours();
-    if (sectionId === 'zones') app.loadDeliveryZones();
+    // Simplified: No longer loading structured zones
+
     if (sectionId === 'rules') app.loadBusinessRules();
     if (sectionId === 'drivers') app.loadDriversList(); // Existing function
 };
@@ -1847,212 +1848,173 @@ app.loadDeliveryZones = async () => {
 
     try {
         const { data: zones, error } = await supabaseClient
+        const minOrder = prompt("Minimum de commande (€):", "15.00");
+
+        const { error } = await supabaseClient
             .from('delivery_zones')
+            .insert({
+                pizzeria_id: app.currentPizzeria.id,
+                postal_code: postalCode,
+                min_order_amount: parseFloat(minOrder),
+                delivery_fee: parseFloat(fee)
+            });
+
+        if (error) alert('Erreur: ' + error.message);
+        // Simplified: No longer loading structured zones after add
+
+    };
+
+    app.deleteZone = async (id) => {
+        if (!confirm('Supprimer cette zone ?')) return;
+        const { error } = await supabaseClient.from('delivery_zones').delete().eq('id', id);
+        // Simplified: No longer loading structured zones after delete
+
+    };
+
+    // 4. BUSINESS RULES
+    app.loadBusinessRules = async () => {
+        if (!app.currentPizzeria) return;
+
+        try {
+            // Prep time
+            document.getElementById('setting-prep-time').value = app.currentPizzeria.preparation_time_minutes || 20;
+
+            // Free delivery threshold
+            document.getElementById('setting-prep-time').value = app.currentPizzeria.preparation_time_minutes || 20;
+            document.getElementById('setting-custom-instructions').value = app.currentPizzeria.custom_instructions || '';
+            document.getElementById('setting-delivery-rules-text').value = app.currentPizzeria.delivery_rules || '';
+
+            // Payment methods
+            const methods = app.currentPizzeria.payment_methods || [];
+            document.querySelectorAll('.payment-checkbox').forEach(cb => {
+                cb.checked = methods.includes(cb.value);
+            });
+        } catch (err) {
+            console.error('Error loading rules:', err);
+        }
+    };
+
+    app.saveBusinessRules = async () => {
+        try {
+            const methods = Array.from(document.querySelectorAll('.payment-checkbox:checked')).map(cb => cb.value);
+
+            const updates = {
+                preparation_time_minutes: parseInt(document.getElementById('setting-prep-time').value) || 20,
+                delivery_rules: document.getElementById('setting-delivery-rules-text').value || null,
+                custom_instructions: document.getElementById('setting-custom-instructions').value || null,
+                payment_methods: methods
+            };
+
+            const { data, error } = await supabaseClient
+                .from('pizzerias')
+                .update(updates)
+                .eq('id', app.currentPizzeria.id)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            if (!data) throw new Error("Mise à jour échouée (Pas de données retournées)");
+
+            app.currentPizzeria = data; // Update with confirmed DB data
+            alert('Règles sauvegardées avec succès !');
+
+        } catch (err) {
+            console.error('Error saving rules:', err);
+            alert('Erreur lors de la sauvegarde : ' + err.message);
+        }
+    };
+
+    // --- NEW SETTINGS LOGIC END ---
+
+    // --- KITCHEN LOAD LOGIC ---
+
+    app.toggleKitchenLoad = async () => {
+        const btn = document.getElementById('kitchen-load-btn');
+        const isFire = btn.classList.contains('status-badge-red'); // currently fire
+
+        // Toggle state locally first for responsiveness
+        const newStatus = isFire ? 'normal' : 'fire';
+
+        // Optimistic UI update
+        if (newStatus === 'fire') {
+            btn.classList.remove('status-badge-neutral');
+            btn.classList.add('status-badge-red');
+            btn.classList.add('pulse');
+            btn.innerHTML = '<i class="fa-solid fa-fire"></i> Coup de feu ACTIF';
+        } else {
+            btn.classList.remove('status-badge-red');
+            btn.classList.remove('pulse');
+            btn.classList.add('status-badge-neutral');
+            btn.innerHTML = '<i class="fa-solid fa-fire"></i> Coup de feu';
+        }
+
+        // Save to DB
+        const { error } = await supabaseClient
+            .from('pizzerias')
+            .update({ kitchen_load_status: newStatus })
+            .eq('id', app.currentPizzeria.id);
+
+        if (error) {
+            console.error('Error updating kitchen load:', error);
+            // Revert UI if error (optional, but good practice)
+            alert('Erreur de connexion');
+        } else {
+            app.currentPizzeria.kitchen_load_status = newStatus;
+        }
+    };
+
+    // Check load on init
+    app.initKitchenLoadState = () => {
+        if (!app.currentPizzeria) return;
+        const btn = document.getElementById('kitchen-load-btn');
+        if (app.currentPizzeria.kitchen_load_status === 'fire') {
+            btn.classList.remove('status-badge-neutral');
+            btn.classList.add('status-badge-red');
+            btn.classList.add('pulse');
+            btn.innerHTML = '<i class="fa-solid fa-fire"></i> Coup de feu ACTIF';
+        }
+    };
+
+    // Add to loadDashboard chain
+    const originalLoadDashboard = app.loadDashboard;
+    app.loadDashboard = async () => {
+        await originalLoadDashboard();
+        app.initKitchenLoadState();
+    };
+
+    // --- MODIFIERS LOGIC START ---
+
+    app.showModifiersModal = () => {
+        document.getElementById('modifiers-modal').style.display = 'flex';
+        app.loadModifiers();
+    };
+
+    app.loadModifiers = async () => {
+        const tbody = document.getElementById('modifiers-tbody');
+        tbody.innerHTML = '<tr><td colspan="5">Chargement...</td></tr>';
+
+        const { data: modifiers, error } = await supabaseClient
+            .from('product_modifiers')
             .select('*')
             .eq('pizzeria_id', app.currentPizzeria.id)
-            .order('postal_code');
+            .order('category')
+            .order('name');
 
-        if (error) throw error;
-
-        if (!zones || zones.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="5" class="text-center text-muted">Aucune zone configurée. Ajoutez les codes postaux desservis.</td>
-                </tr>`;
+        if (error) {
+            tbody.innerHTML = '<tr><td colspan="5">Erreur de chargement</td></tr>';
             return;
         }
 
-        tbody.innerHTML = zones.map(zone => `
-            <tr>
-                <td><strong>${zone.postal_code}</strong></td>
-                <td>${zone.city_name || '-'}</td>
-                <td>${zone.min_order_amount}€</td>
-                <td>${zone.delivery_fee}€</td>
-                <td>
-                    <button onclick="app.deleteZone('${zone.id}')" class="btn-icon text-danger">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
-                </td>
-            </tr>
-        `).join('');
-    } catch (err) {
-        console.error('Error loading zones:', err);
-        tbody.innerHTML = '<tr><td colspan="5">Erreur de chargement.</td></tr>';
-    }
-};
-
-app.addDeliveryZone = async () => {
-    if (!app.currentPizzeria) return alert('Erreur: Pizzeria non identifiée.');
-    const postalCode = prompt("Code Postal à desservir (ex: 75011):");
-    if (!postalCode) return;
-
-    const fee = prompt("Frais de livraison pour cette zone (€):", "2.50");
-    const minOrder = prompt("Minimum de commande (€):", "15.00");
-
-    const { error } = await supabaseClient
-        .from('delivery_zones')
-        .insert({
-            pizzeria_id: app.currentPizzeria.id,
-            postal_code: postalCode,
-            min_order_amount: parseFloat(minOrder),
-            delivery_fee: parseFloat(fee)
-        });
-
-    if (error) alert('Erreur: ' + error.message);
-    else app.loadDeliveryZones();
-};
-
-app.deleteZone = async (id) => {
-    if (!confirm('Supprimer cette zone ?')) return;
-    const { error } = await supabaseClient.from('delivery_zones').delete().eq('id', id);
-    if (!error) app.loadDeliveryZones();
-};
-
-// 4. BUSINESS RULES
-app.loadBusinessRules = async () => {
-    if (!app.currentPizzeria) return;
-
-    try {
-        // Prep time
-        document.getElementById('setting-prep-time').value = app.currentPizzeria.preparation_time_minutes || 20;
-
-        // Free delivery threshold
-        document.getElementById('setting-free-delivery').value = app.currentPizzeria.free_delivery_threshold || '';
-
-        // Custom instructions
-        document.getElementById('setting-custom-instructions').value = app.currentPizzeria.custom_instructions || '';
-
-        // Payment methods
-        const methods = app.currentPizzeria.payment_methods || [];
-        document.querySelectorAll('.payment-checkbox').forEach(cb => {
-            cb.checked = methods.includes(cb.value);
-        });
-    } catch (err) {
-        console.error('Error loading rules:', err);
-    }
-};
-
-app.saveBusinessRules = async () => {
-    try {
-        const methods = Array.from(document.querySelectorAll('.payment-checkbox:checked')).map(cb => cb.value);
-
-        const updates = {
-            preparation_time_minutes: parseInt(document.getElementById('setting-prep-time').value) || 20,
-            free_delivery_threshold: parseFloat(document.getElementById('setting-free-delivery').value) || null,
-            custom_instructions: document.getElementById('setting-custom-instructions').value || null,
-            payment_methods: methods
-        };
-
-        const { data, error } = await supabaseClient
-            .from('pizzerias')
-            .update(updates)
-            .eq('id', app.currentPizzeria.id)
-            .select()
-            .single();
-
-        if (error) throw error;
-
-        if (!data) throw new Error("Mise à jour échouée (Pas de données retournées)");
-
-        app.currentPizzeria = data; // Update with confirmed DB data
-        alert('Règles sauvegardées avec succès !');
-
-    } catch (err) {
-        console.error('Error saving rules:', err);
-        alert('Erreur lors de la sauvegarde : ' + err.message);
-    }
-};
-
-// --- NEW SETTINGS LOGIC END ---
-
-// --- KITCHEN LOAD LOGIC ---
-
-app.toggleKitchenLoad = async () => {
-    const btn = document.getElementById('kitchen-load-btn');
-    const isFire = btn.classList.contains('status-badge-red'); // currently fire
-
-    // Toggle state locally first for responsiveness
-    const newStatus = isFire ? 'normal' : 'fire';
-
-    // Optimistic UI update
-    if (newStatus === 'fire') {
-        btn.classList.remove('status-badge-neutral');
-        btn.classList.add('status-badge-red');
-        btn.classList.add('pulse');
-        btn.innerHTML = '<i class="fa-solid fa-fire"></i> Coup de feu ACTIF';
-    } else {
-        btn.classList.remove('status-badge-red');
-        btn.classList.remove('pulse');
-        btn.classList.add('status-badge-neutral');
-        btn.innerHTML = '<i class="fa-solid fa-fire"></i> Coup de feu';
-    }
-
-    // Save to DB
-    const { error } = await supabaseClient
-        .from('pizzerias')
-        .update({ kitchen_load_status: newStatus })
-        .eq('id', app.currentPizzeria.id);
-
-    if (error) {
-        console.error('Error updating kitchen load:', error);
-        // Revert UI if error (optional, but good practice)
-        alert('Erreur de connexion');
-    } else {
-        app.currentPizzeria.kitchen_load_status = newStatus;
-    }
-};
-
-// Check load on init
-app.initKitchenLoadState = () => {
-    if (!app.currentPizzeria) return;
-    const btn = document.getElementById('kitchen-load-btn');
-    if (app.currentPizzeria.kitchen_load_status === 'fire') {
-        btn.classList.remove('status-badge-neutral');
-        btn.classList.add('status-badge-red');
-        btn.classList.add('pulse');
-        btn.innerHTML = '<i class="fa-solid fa-fire"></i> Coup de feu ACTIF';
-    }
-};
-
-// Add to loadDashboard chain
-const originalLoadDashboard = app.loadDashboard;
-app.loadDashboard = async () => {
-    await originalLoadDashboard();
-    app.initKitchenLoadState();
-};
-
-// --- MODIFIERS LOGIC START ---
-
-app.showModifiersModal = () => {
-    document.getElementById('modifiers-modal').style.display = 'flex';
-    app.loadModifiers();
-};
-
-app.loadModifiers = async () => {
-    const tbody = document.getElementById('modifiers-tbody');
-    tbody.innerHTML = '<tr><td colspan="5">Chargement...</td></tr>';
-
-    const { data: modifiers, error } = await supabaseClient
-        .from('product_modifiers')
-        .select('*')
-        .eq('pizzeria_id', app.currentPizzeria.id)
-        .order('category')
-        .order('name');
-
-    if (error) {
-        tbody.innerHTML = '<tr><td colspan="5">Erreur de chargement</td></tr>';
-        return;
-    }
-
-    if (!modifiers || modifiers.length === 0) {
-        tbody.innerHTML = `
+        if (!modifiers || modifiers.length === 0) {
+            tbody.innerHTML = `
             <tr>
                 <td colspan="5" class="text-center text-muted">Aucune option configurée. Ajoutez "Base Crème", "Supplément Chèvre", etc.</td>
             </tr>`;
-        return;
-    }
+            return;
+        }
 
-    tbody.innerHTML = modifiers.map(mod => `
+        tbody.innerHTML = modifiers.map(mod => `
         <tr>
             <td><strong>${mod.name}</strong></td>
             <td><span class="badge ${mod.category}">${mod.category}</span></td>
@@ -2070,84 +2032,84 @@ app.loadModifiers = async () => {
             </td>
         </tr>
     `).join('');
-};
+    };
 
-app.addModifier = async () => {
-    const name = document.getElementById('mod-name').value;
-    const category = document.getElementById('mod-category').value;
-    const price = document.getElementById('mod-price').value;
+    app.addModifier = async () => {
+        const name = document.getElementById('mod-name').value;
+        const category = document.getElementById('mod-category').value;
+        const price = document.getElementById('mod-price').value;
 
-    if (!name) return alert('Le nom est obligatoire');
+        if (!name) return alert('Le nom est obligatoire');
 
-    const { error } = await supabaseClient
-        .from('product_modifiers')
-        .insert({
-            pizzeria_id: app.currentPizzeria.id,
-            name: name,
-            category: category,
-            price_extra: parseFloat(price) || 0,
-            available: true
-        });
+        const { error } = await supabaseClient
+            .from('product_modifiers')
+            .insert({
+                pizzeria_id: app.currentPizzeria.id,
+                name: name,
+                category: category,
+                price_extra: parseFloat(price) || 0,
+                available: true
+            });
 
-    if (error) alert('Erreur: ' + error.message);
-    else {
-        // Clear inputs
-        document.getElementById('mod-name').value = '';
-        document.getElementById('mod-price').value = '0';
+        if (error) alert('Erreur: ' + error.message);
+        else {
+            // Clear inputs
+            document.getElementById('mod-name').value = '';
+            document.getElementById('mod-price').value = '0';
+            app.loadModifiers();
+        }
+    };
+
+    app.deleteModifier = async (id) => {
+        if (!confirm('Supprimer cette option ?')) return;
+        const { error } = await supabaseClient.from('product_modifiers').delete().eq('id', id);
+        if (!error) app.loadModifiers();
+    };
+
+    app.toggleModifierAvailability = async (id, isAvailable) => {
+        // Optimistic UI handled by checkbox
+        const { error } = await supabaseClient
+            .from('product_modifiers')
+            .update({ available: isAvailable })
+            .eq('id', id);
+
+        if (error) console.error('Error updating modifier:', error);
+    };
+
+    // --- MODIFIERS LOGIC END ---
+
+    // --- MODIFIERS LOGIC START ---
+
+    app.showModifiersModal = () => {
+        document.getElementById('modifiers-modal').style.display = 'flex';
         app.loadModifiers();
-    }
-};
+    };
 
-app.deleteModifier = async (id) => {
-    if (!confirm('Supprimer cette option ?')) return;
-    const { error } = await supabaseClient.from('product_modifiers').delete().eq('id', id);
-    if (!error) app.loadModifiers();
-};
+    app.loadModifiers = async () => {
+        const tbody = document.getElementById('modifiers-tbody');
+        tbody.innerHTML = '<tr><td colspan="5">Chargement...</td></tr>';
 
-app.toggleModifierAvailability = async (id, isAvailable) => {
-    // Optimistic UI handled by checkbox
-    const { error } = await supabaseClient
-        .from('product_modifiers')
-        .update({ available: isAvailable })
-        .eq('id', id);
+        const { data: modifiers, error } = await supabaseClient
+            .from('product_modifiers')
+            .select('*')
+            .eq('pizzeria_id', app.currentPizzeria.id)
+            .order('category')
+            .order('name');
 
-    if (error) console.error('Error updating modifier:', error);
-};
+        if (error) {
+            tbody.innerHTML = '<tr><td colspan="5">Erreur de chargement</td></tr>';
+            return;
+        }
 
-// --- MODIFIERS LOGIC END ---
-
-// --- MODIFIERS LOGIC START ---
-
-app.showModifiersModal = () => {
-    document.getElementById('modifiers-modal').style.display = 'flex';
-    app.loadModifiers();
-};
-
-app.loadModifiers = async () => {
-    const tbody = document.getElementById('modifiers-tbody');
-    tbody.innerHTML = '<tr><td colspan="5">Chargement...</td></tr>';
-
-    const { data: modifiers, error } = await supabaseClient
-        .from('product_modifiers')
-        .select('*')
-        .eq('pizzeria_id', app.currentPizzeria.id)
-        .order('category')
-        .order('name');
-
-    if (error) {
-        tbody.innerHTML = '<tr><td colspan="5">Erreur de chargement</td></tr>';
-        return;
-    }
-
-    if (!modifiers || modifiers.length === 0) {
-        tbody.innerHTML = `
+        if (!modifiers || modifiers.length === 0) {
+            tbody.innerHTML = `
             <tr>
                 <td colspan="5" class="text-center text-muted">Aucune option configurée. Ajoutez "Base Crème", "Supplément Chèvre", etc.</td>
             </tr>`;
-        return;
-    }
+            return;
+        }
 
-    tbody.innerHTML = modifiers.map(mod => `
+        tbody.innerHTML = modifiers.map(mod => `
         <tr>
             <td><strong>${mod.name}</strong></td>
             <td><span class="badge ${mod.category}">${mod.category}</span></td>
@@ -2165,53 +2127,53 @@ app.loadModifiers = async () => {
             </td>
         </tr>
     `).join('');
-};
+    };
 
-app.addModifier = async () => {
-    const name = document.getElementById('mod-name').value;
-    const category = document.getElementById('mod-category').value;
-    const price = document.getElementById('mod-price').value;
+    app.addModifier = async () => {
+        const name = document.getElementById('mod-name').value;
+        const category = document.getElementById('mod-category').value;
+        const price = document.getElementById('mod-price').value;
 
-    if (!name) return alert('Le nom est obligatoire');
+        if (!name) return alert('Le nom est obligatoire');
 
-    const { error } = await supabaseClient
-        .from('product_modifiers')
-        .insert({
-            pizzeria_id: app.currentPizzeria.id,
-            name: name,
-            category: category,
-            price_extra: parseFloat(price) || 0,
-            available: true
-        });
+        const { error } = await supabaseClient
+            .from('product_modifiers')
+            .insert({
+                pizzeria_id: app.currentPizzeria.id,
+                name: name,
+                category: category,
+                price_extra: parseFloat(price) || 0,
+                available: true
+            });
 
-    if (error) alert('Erreur: ' + error.message);
-    else {
-        // Clear inputs
-        document.getElementById('mod-name').value = '';
-        document.getElementById('mod-price').value = '0';
-        app.loadModifiers();
-    }
-};
+        if (error) alert('Erreur: ' + error.message);
+        else {
+            // Clear inputs
+            document.getElementById('mod-name').value = '';
+            document.getElementById('mod-price').value = '0';
+            app.loadModifiers();
+        }
+    };
 
-app.deleteModifier = async (id) => {
-    if (!confirm('Supprimer cette option ?')) return;
-    const { error } = await supabaseClient.from('product_modifiers').delete().eq('id', id);
-    if (!error) app.loadModifiers();
-};
+    app.deleteModifier = async (id) => {
+        if (!confirm('Supprimer cette option ?')) return;
+        const { error } = await supabaseClient.from('product_modifiers').delete().eq('id', id);
+        if (!error) app.loadModifiers();
+    };
 
-app.toggleModifierAvailability = async (id, isAvailable) => {
-    // Optimistic UI handled by checkbox
-    const { error } = await supabaseClient
-        .from('product_modifiers')
-        .update({ available: isAvailable })
-        .eq('id', id);
+    app.toggleModifierAvailability = async (id, isAvailable) => {
+        // Optimistic UI handled by checkbox
+        const { error } = await supabaseClient
+            .from('product_modifiers')
+            .update({ available: isAvailable })
+            .eq('id', id);
 
-    if (error) console.error('Error updating modifier:', error);
-};
+        if (error) console.error('Error updating modifier:', error);
+    };
 
-// --- MODIFIERS LOGIC END ---
+    // --- MODIFIERS LOGIC END ---
 
-// Initialisation au chargement de la page
-document.addEventListener('DOMContentLoaded', () => {
-    app.init();
-});
+    // Initialisation au chargement de la page
+    document.addEventListener('DOMContentLoaded', () => {
+        app.init();
+    });
