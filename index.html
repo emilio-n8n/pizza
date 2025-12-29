@@ -597,7 +597,8 @@
                                 </button>
                             </div>
 
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                                 <h3>Produits</h3>
                                 <button class="btn-secondary btn-sm" onclick="app.showModifiersModal()">
                                     <i class="fa-solid fa-layer-group"></i> Options & Suppléments
@@ -683,23 +684,25 @@
                                         horaires</button>
                                 </div>
 
-                                 <!-- 3. Delivery (Natural Language IA) -->
-                                 <div id="settings-section-zones" class="settings-section" style="display: none;">
-                                     <div class="section-header">
-                                         <h3>Règles de Livraison (IA)</h3>
-                                         <p class="text-sm text-muted">Expliquez ici vos zones et tarifs en langage naturel. Sophie l'IA les appliquera.</p>
-                                     </div>
-                                     <div class="settings-card dark-card">
-                                         <div class="input-group dark">
-                                             <label>Décrivez vos conditions de livraison</label>
-                                             <textarea id="setting-delivery-rules-text" class="dark-input" rows="8"
-                                                 placeholder="Ex: Nous livrons dans le 15ème arrondissement.
+                                <!-- 3. Delivery (Natural Language IA) -->
+                                <div id="settings-section-zones" class="settings-section" style="display: none;">
+                                    <div class="section-header">
+                                        <h3>Règles de Livraison (IA)</h3>
+                                        <p class="text-sm text-muted">Expliquez ici vos zones et tarifs en langage
+                                            naturel. l'IA les appliquera.</p>
+                                    </div>
+                                    <div class="settings-card dark-card">
+                                        <div class="input-group dark">
+                                            <label>Décrivez vos conditions de livraison</label>
+                                            <textarea id="setting-delivery-rules-text" class="dark-input" rows="8"
+                                                placeholder="Ex: Nous livrons dans le 15ème arrondissement.
 Min commande: 15€. Frais: 2.50€. Gratuit dès 30€.
 Pour le 14ème: Min 20€..."></textarea>
-                                         </div>
-                                         <button onclick="app.saveBusinessRules()" class="btn-primary mt-2">Enregistrer les conditions</button>
-                                     </div>
-                                 </div>
+                                        </div>
+                                        <button onclick="app.saveBusinessRules()" class="btn-primary mt-2">Enregistrer
+                                            les conditions</button>
+                                    </div>
+                                </div>
 
                                 <!-- 4. Business Rules & AI -->
                                 <div id="settings-section-rules" class="settings-section" style="display: none;">
@@ -726,13 +729,13 @@ Pour le 14ème: Min 20€..."></textarea>
                                         </div>
                                     </div>
 
-                                     <div class="settings-card dark-card mb-4">
-                                         <h4><i class="fa-solid fa-stopwatch"></i> Temps & Délais</h4>
-                                         <div class="input-group dark">
-                                             <label>Temps préparation standard (min)</label>
-                                             <input type="number" id="setting-prep-time" class="dark-input" value="20">
-                                         </div>
-                                     </div>
+                                    <div class="settings-card dark-card mb-4">
+                                        <h4><i class="fa-solid fa-stopwatch"></i> Temps & Délais</h4>
+                                        <div class="input-group dark">
+                                            <label>Temps préparation standard (min)</label>
+                                            <input type="number" id="setting-prep-time" class="dark-input" value="20">
+                                        </div>
+                                    </div>
 
                                     <div class="settings-card dark-card mb-4">
                                         <h4><i class="fa-solid fa-robot"></i> Instructions IA</h4>
@@ -921,11 +924,13 @@ Pour le 14ème: Min 20€..."></textarea>
         <!-- Modifiers Management Modal -->
         <div id="modifiers-modal" class="modal" style="display: none;">
             <div class="modal-content" style="max-width: 700px;">
-                <span class="modal-close" onclick="document.getElementById('modifiers-modal').style.display = 'none'">&times;</span>
+                <span class="modal-close"
+                    onclick="document.getElementById('modifiers-modal').style.display = 'none'">&times;</span>
                 <h2><i class="fa-solid fa-layer-group"></i> Options & Suppléments (Global)</h2>
                 <p>Ces options seront disponibles pour l'Agent IA lorsqu'un client personnalise sa commande.</p>
 
-                <div class="modifier-form" style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                <div class="modifier-form"
+                    style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
                     <h4 style="margin-top:0;">Ajouter une option</h4>
                     <div style="display: grid; grid-template-columns: 2fr 2fr 1fr auto; gap: 0.5rem; align-items: end;">
                         <input type="text" id="mod-name" placeholder="Nom (ex: Base Crème)">
