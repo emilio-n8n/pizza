@@ -2,7 +2,7 @@
 // Configuration Supabase
 const SUPABASE_URL = 'https://sjvpewposwmawlyqqbnj.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqdnBld3Bvc3dtYXdseXFxYm5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2NjY3OTMsImV4cCI6MjA3OTI0Mjc5M30.xfzjeSl7vhd3YwlLOFlHHAz1jXxbtJKrO_ylvwOcgHg';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const app = {
     state: {
@@ -12,14 +12,14 @@ const app = {
 
     init: async () => {
         // Check active session
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await supabaseClient.auth.getSession();
         app.state.session = session;
 
         // Check for driver login
         await app.checkDriverLogin();
 
         // Listen for auth changes
-        supabase.auth.onAuthStateChange((_event, session) => {
+        supabaseClient.auth.onAuthStateChange((_event, session) => {
             app.state.session = session;
         });
 
@@ -83,7 +83,7 @@ const app = {
         const email = e.target.querySelector('input[type="email"]').value;
         const password = e.target.querySelector('input[type="password"]').value;
 
-        const { data, error } = await supabase.auth.signUp({
+        const { data, error } = await supabaseClient.auth.signUp({
             email,
             password,
         });
@@ -99,7 +99,7 @@ const app = {
 
     handleEmailConfirmed: async () => {
         // Check if user is actually confirmed
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await supabaseClient.auth.getSession();
 
         if (session) {
             app.state.session = session;
@@ -121,7 +121,7 @@ const app = {
         const email = form.querySelector('input[type="email"]').value;
         const password = form.querySelector('input[type="password"]').value;
 
-        const { data, error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
             email,
             password,
         });
@@ -132,7 +132,7 @@ const app = {
             submitBtn.innerText = originalText;
         } else {
             // Check if they have a pizzeria
-            const { data: pizzerias } = await supabase
+            const { data: pizzerias } = await supabaseClient
                 .from('pizzerias')
                 .select('*')
                 .eq('user_id', data.session.user.id)
@@ -199,7 +199,7 @@ const app = {
         const user = app.state.session.user;
 
         // Create pizzeria first
-        const { data: pizzeriaData, error } = await supabase
+        const { data: pizzeriaData, error } = await supabaseClient
             .from('pizzerias')
             .insert([
                 {
@@ -232,7 +232,7 @@ const app = {
             submitBtn.innerText = 'Analyse du site web...';
 
             try {
-                const { data: analysisResult, error: analysisError } = await supabase.functions.invoke('scrape-menu-from-url', {
+                const { data: analysisResult, error: analysisError } = await supabaseClient.functions.invoke('scrape-menu-from-url', {
                     body: { url: menuUrl }
                 });
 
@@ -264,7 +264,7 @@ const app = {
             submitBtn.innerText = 'Upload du menu...';
 
             const fileName = `${pizzeriaData.id}/${Date.now()}_menu.jpg`;
-            const { data: uploadData, error: uploadError } = await supabase.storage
+            const { data: uploadData, error: uploadError } = await supabaseClient.storage
                 .from('menus')
                 .upload(fileName, app.menuPhotoFile);
 
@@ -277,12 +277,12 @@ const app = {
                 return;
             }
 
-            const { data: { publicUrl } } = supabase.storage
+            const { data: { publicUrl } } = supabaseClient.storage
                 .from('menus')
                 .getPublicUrl(fileName);
 
             // Update pizzeria with menu URL
-            await supabase
+            await supabaseClient
                 .from('pizzerias')
                 .update({ menu_image_url: publicUrl })
                 .eq('id', pizzeriaData.id);
@@ -291,7 +291,7 @@ const app = {
             submitBtn.innerText = 'Analyse du menu par IA...';
 
             try {
-                const { data: analysisResult, error: analysisError } = await supabase.functions.invoke('analyze-menu', {
+                const { data: analysisResult, error: analysisError } = await supabaseClient.functions.invoke('analyze-menu', {
                     body: { imageUrl: publicUrl }
                 });
 
@@ -338,7 +338,7 @@ const app = {
         const password = form.querySelector('input[name="adminPass"]').value;
 
         // Admin must login as a real user
-        const { data, error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
             email,
             password
         });
@@ -352,7 +352,7 @@ const app = {
                 app.navigateTo('admin-dashboard');
             } else {
                 alert('Vous n\'êtes pas administrateur.');
-                supabase.auth.signOut();
+                supabaseClient.auth.signOut();
             }
             submitBtn.disabled = false;
             submitBtn.innerText = originalText;
@@ -394,7 +394,7 @@ const app = {
         if (!pizzeriaId) {
             const user = app.state.session?.user;
             if (user) {
-                const { data } = await supabase.from('pizzerias').select('id').eq('user_id', user.id).single();
+                const { data } = await supabaseClient.from('pizzerias').select('id').eq('user_id', user.id).single();
                 pizzeriaId = data?.id;
                 app.currentPizzeriaId = pizzeriaId;
             }
@@ -405,7 +405,7 @@ const app = {
             return;
         }
 
-        const { data: menuItems, error } = await supabase
+        const { data: menuItems, error } = await supabaseClient
             .from('menu_items')
             .select('*')
             .eq('pizzeria_id', pizzeriaId)
@@ -510,7 +510,7 @@ const app = {
             available: true
         };
 
-        const { data, error } = await supabase.from('menu_items').insert([newItem]).select().single();
+        const { data, error } = await supabaseClient.from('menu_items').insert([newItem]).select().single();
 
         if (error) {
             alert('Erreur: ' + error.message);
@@ -531,7 +531,7 @@ const app = {
         const updateData = {};
         updateData[field] = value;
 
-        const { error } = await supabase.from('menu_items').update(updateData).eq('id', id);
+        const { error } = await supabaseClient.from('menu_items').update(updateData).eq('id', id);
 
         if (error) {
             console.error('Update error:', error);
@@ -546,7 +546,7 @@ const app = {
         app.menuItemsCache = app.menuItemsCache.filter(i => i.id !== id);
         app.renderMenuManagementList();
 
-        const { error } = await supabase.from('menu_items').delete().eq('id', id);
+        const { error } = await supabaseClient.from('menu_items').delete().eq('id', id);
         if (error) {
             alert('Erreur: ' + error.message);
             app.loadMenuManagement(); // Reload on error
@@ -564,7 +564,7 @@ const app = {
             return;
         }
 
-        const { data: pizzeria, error } = await supabase
+        const { data: pizzeria, error } = await supabaseClient
             .from('pizzerias')
             .select('*')
             .eq('user_id', user.id)
@@ -617,7 +617,7 @@ const app = {
             document.getElementById('pizzeria-contact-header').innerText = `Téléphone de contact: ${pizzeria.contact_phone || 'Non renseigné'}`;
         }
 
-        const { data: orders, error: ordersError } = await supabase
+        const { data: orders, error: ordersError } = await supabaseClient
             .from('orders')
             .select('*')
             .eq('pizzeria_id', pizzeria.id)
@@ -710,7 +710,7 @@ const app = {
     },
 
     updateOrderStatus: async (orderId, newStatus) => {
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('orders')
             .update({ status: newStatus })
             .eq('id', orderId);
@@ -738,7 +738,7 @@ const app = {
         list.innerHTML = '<p>Chargement...</p>';
 
         // Fetch all pizzerias
-        const { data: pizzerias, error } = await supabase
+        const { data: pizzerias, error } = await supabaseClient
             .from('pizzerias')
             .select('*');
 
@@ -777,7 +777,7 @@ const app = {
     },
 
     viewPizzeriaDetail: async (pizzeriaId) => {
-        const { data: pizzeria, error } = await supabase
+        const { data: pizzeria, error } = await supabaseClient
             .from('pizzerias')
             .select('*')
             .eq('id', pizzeriaId)
@@ -846,7 +846,7 @@ const app = {
         if (!confirm(`Confirmer l'activation avec le numéro ${phoneNumber} ?`)) return;
 
         // Get pizzeria details first
-        const { data: pizzeria } = await supabase
+        const { data: pizzeria } = await supabaseClient
             .from('pizzerias')
             .select('name, user_id, user_email')
             .eq('id', pizzeriaId)
@@ -858,7 +858,7 @@ const app = {
         }
 
         // Update status
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('pizzerias')
             .update({
                 status: 'active',
@@ -874,7 +874,7 @@ const app = {
 
             if (!userEmail) {
                 // Fallback: get email from auth.users via a query
-                const { data: userData } = await supabase
+                const { data: userData } = await supabaseClient
                     .from('pizzerias')
                     .select('user_id')
                     .eq('id', pizzeriaId)
@@ -886,7 +886,7 @@ const app = {
 
                 if (userEmail) {
                     // Update the pizzeria with the email for future use
-                    await supabase
+                    await supabaseClient
                         .from('pizzerias')
                         .update({ user_email: userEmail })
                         .eq('id', pizzeriaId);
@@ -901,7 +901,7 @@ const app = {
 
             // Send activation email via Edge Function
             try {
-                const { data: { session } } = await supabase.auth.getSession();
+                const { data: { session } } = await supabaseClient.auth.getSession();
                 const response = await fetch(`${SUPABASE_URL}/functions/v1/send-activation-email`, {
                     method: 'POST',
                     headers: {
@@ -954,7 +954,7 @@ const app = {
         const user = app.state.session?.user;
         if (!user) return;
 
-        const { data: pizzeria, error } = await supabase
+        const { data: pizzeria, error } = await supabaseClient
             .from('pizzerias')
             .select('phone_number')
             .eq('user_id', user.id)
@@ -1010,7 +1010,7 @@ const app = {
         const user = app.state.session?.user;
 
         // Get pizzeria ID
-        const { data: pizzeria } = await supabase
+        const { data: pizzeria } = await supabaseClient
             .from('pizzerias')
             .select('id')
             .eq('user_id', user.id)
@@ -1018,7 +1018,7 @@ const app = {
 
         if (!pizzeria) return;
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('delivery_drivers')
             .insert([{
                 pizzeria_id: pizzeria.id,
@@ -1045,11 +1045,11 @@ const app = {
     loadDriversList: async (pizzeriaId) => {
         if (!pizzeriaId) {
             const user = app.state.session?.user;
-            const { data } = await supabase.from('pizzerias').select('id').eq('user_id', user.id).single();
+            const { data } = await supabaseClient.from('pizzerias').select('id').eq('user_id', user.id).single();
             pizzeriaId = data?.id;
         }
 
-        const { data: drivers } = await supabase
+        const { data: drivers } = await supabaseClient
             .from('delivery_drivers')
             .select('*')
             .eq('pizzeria_id', pizzeriaId)
@@ -1091,7 +1091,7 @@ const app = {
     },
 
     toggleDriverStatus: async (driverId, currentStatus) => {
-        await supabase.from('delivery_drivers').update({ is_active: !currentStatus }).eq('id', driverId);
+        await supabaseClient.from('delivery_drivers').update({ is_active: !currentStatus }).eq('id', driverId);
         app.loadDriversList();
     },
 
@@ -1117,7 +1117,7 @@ const app = {
         app.navigateTo('driver-dashboard');
 
         // Get driver info
-        const { data: drivers, error } = await supabase.rpc('get_driver_by_token', { token_input: token });
+        const { data: drivers, error } = await supabaseClient.rpc('get_driver_by_token', { token_input: token });
 
         if (error || !drivers || drivers.length === 0) {
             alert('Lien invalide ou expiré.');
@@ -1140,7 +1140,7 @@ const app = {
         const token = localStorage.getItem('driver_token');
         if (!token) return;
 
-        const { data: orders, error } = await supabase.rpc('get_driver_orders', { token_input: token });
+        const { data: orders, error } = await supabaseClient.rpc('get_driver_orders', { token_input: token });
 
         if (error) {
             console.error('Error loading driver orders:', error);
@@ -1264,7 +1264,7 @@ const app = {
 
     driverTakeOrder: async (orderId) => {
         const token = localStorage.getItem('driver_token');
-        const { data, error } = await supabase.rpc('driver_update_order', {
+        const { data, error } = await supabaseClient.rpc('driver_update_order', {
             token_input: token,
             order_id_input: orderId,
             new_status: 'delivering'
@@ -1278,7 +1278,7 @@ const app = {
         if (!confirm('Confirmer la livraison ?')) return;
 
         const token = localStorage.getItem('driver_token');
-        const { data, error } = await supabase.rpc('driver_update_order', {
+        const { data, error } = await supabaseClient.rpc('driver_update_order', {
             token_input: token,
             order_id_input: orderId,
             new_status: 'delivered'
@@ -1330,7 +1330,7 @@ const app = {
         // We will need to add a policy for this: "Anyone can read order if they know the ID" -> Not possible easily with standard RLS without a "secret" column.
         // Let's use the `get_order_status` RPC we can create.
 
-        const { data: order, error } = await supabase.rpc('get_order_tracking', { order_id_input: orderId });
+        const { data: order, error } = await supabaseClient.rpc('get_order_tracking', { order_id_input: orderId });
 
         const container = document.getElementById('tracking-card-container'); // We'll update HTML to have this container
 
@@ -1615,7 +1615,7 @@ const app = {
             console.log('Items to save:', itemsToSave);
 
             // Delete existing items (if any, though this is onboarding)
-            const { error: deleteError } = await supabase
+            const { error: deleteError } = await supabaseClient
                 .from('menu_items')
                 .delete()
                 .eq('pizzeria_id', app.currentPizzeriaId);
@@ -1625,7 +1625,7 @@ const app = {
             }
 
             // Insert new items
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('menu_items')
                 .insert(itemsToSave)
                 .select();
@@ -1638,7 +1638,7 @@ const app = {
             console.log('Menu saved successfully:', data);
 
             // Update pizzeria with analysis timestamp
-            await supabase
+            await supabaseClient
                 .from('pizzerias')
                 .update({ menu_analyzed_at: new Date().toISOString() })
                 .eq('id', app.currentPizzeriaId);
@@ -1722,7 +1722,7 @@ app.saveGeneralSettings = async (event) => {
         contact_phone: document.getElementById('setting-phone').value // Updated to contact_phone
     };
 
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from('pizzerias')
         .update(updates)
         .eq('id', app.currentPizzeria.id);
@@ -1750,7 +1750,7 @@ app.loadOpeningHours = async () => {
     }
 
     try {
-        const { data: hours, error } = await supabase
+        const { data: hours, error } = await supabaseClient
             .from('opening_hours')
             .select('*')
             .eq('pizzeria_id', app.currentPizzeria.id)
@@ -1822,7 +1822,7 @@ app.saveOpeningHours = async () => {
         });
     });
 
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from('opening_hours')
         .upsert(updates);
 
@@ -1846,7 +1846,7 @@ app.loadDeliveryZones = async () => {
     }
 
     try {
-        const { data: zones, error } = await supabase
+        const { data: zones, error } = await supabaseClient
             .from('delivery_zones')
             .select('*')
             .eq('pizzeria_id', app.currentPizzeria.id)
@@ -1889,7 +1889,7 @@ app.addDeliveryZone = async () => {
     const fee = prompt("Frais de livraison pour cette zone (€):", "2.50");
     const minOrder = prompt("Minimum de commande (€):", "15.00");
 
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from('delivery_zones')
         .insert({
             pizzeria_id: app.currentPizzeria.id,
@@ -1904,7 +1904,7 @@ app.addDeliveryZone = async () => {
 
 app.deleteZone = async (id) => {
     if (!confirm('Supprimer cette zone ?')) return;
-    const { error } = await supabase.from('delivery_zones').delete().eq('id', id);
+    const { error } = await supabaseClient.from('delivery_zones').delete().eq('id', id);
     if (!error) app.loadDeliveryZones();
 };
 
@@ -1943,7 +1943,7 @@ app.saveBusinessRules = async () => {
             payment_methods: methods
         };
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('pizzerias')
             .update(updates)
             .eq('id', app.currentPizzeria.id)
@@ -1988,7 +1988,7 @@ app.toggleKitchenLoad = async () => {
     }
 
     // Save to DB
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from('pizzerias')
         .update({ kitchen_load_status: newStatus })
         .eq('id', app.currentPizzeria.id);
@@ -2032,7 +2032,7 @@ app.loadModifiers = async () => {
     const tbody = document.getElementById('modifiers-tbody');
     tbody.innerHTML = '<tr><td colspan="5">Chargement...</td></tr>';
 
-    const { data: modifiers, error } = await supabase
+    const { data: modifiers, error } = await supabaseClient
         .from('product_modifiers')
         .select('*')
         .eq('pizzeria_id', app.currentPizzeria.id)
@@ -2079,7 +2079,7 @@ app.addModifier = async () => {
 
     if (!name) return alert('Le nom est obligatoire');
 
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from('product_modifiers')
         .insert({
             pizzeria_id: app.currentPizzeria.id,
@@ -2100,13 +2100,13 @@ app.addModifier = async () => {
 
 app.deleteModifier = async (id) => {
     if (!confirm('Supprimer cette option ?')) return;
-    const { error } = await supabase.from('product_modifiers').delete().eq('id', id);
+    const { error } = await supabaseClient.from('product_modifiers').delete().eq('id', id);
     if (!error) app.loadModifiers();
 };
 
 app.toggleModifierAvailability = async (id, isAvailable) => {
     // Optimistic UI handled by checkbox
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from('product_modifiers')
         .update({ available: isAvailable })
         .eq('id', id);
@@ -2127,7 +2127,7 @@ app.loadModifiers = async () => {
     const tbody = document.getElementById('modifiers-tbody');
     tbody.innerHTML = '<tr><td colspan="5">Chargement...</td></tr>';
 
-    const { data: modifiers, error } = await supabase
+    const { data: modifiers, error } = await supabaseClient
         .from('product_modifiers')
         .select('*')
         .eq('pizzeria_id', app.currentPizzeria.id)
@@ -2174,7 +2174,7 @@ app.addModifier = async () => {
 
     if (!name) return alert('Le nom est obligatoire');
 
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from('product_modifiers')
         .insert({
             pizzeria_id: app.currentPizzeria.id,
@@ -2195,13 +2195,13 @@ app.addModifier = async () => {
 
 app.deleteModifier = async (id) => {
     if (!confirm('Supprimer cette option ?')) return;
-    const { error } = await supabase.from('product_modifiers').delete().eq('id', id);
+    const { error } = await supabaseClient.from('product_modifiers').delete().eq('id', id);
     if (!error) app.loadModifiers();
 };
 
 app.toggleModifierAvailability = async (id, isAvailable) => {
     // Optimistic UI handled by checkbox
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from('product_modifiers')
         .update({ available: isAvailable })
         .eq('id', id);
